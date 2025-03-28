@@ -1,0 +1,111 @@
+Kodunuzdaki hata büyük olasılıkla iller.map veya ilceler.map işlemleri sırasında veri yapısının beklendiği gibi olmamasından kaynaklanıyor. Bu tür bir sorunla karşılaşmanın yaygın nedenleri şunlar olabilir:
+
+iller Değişkeninin Doğru Veri Yapısına Sahip Olmaması: executeQuery sonucu bir dizi (Array) yerine başka bir türde veri döndürüyor olabilir.
+ilceler Değişkeninin Doğru Veri Yapısına Sahip Olmaması: Benzer şekilde, executeQuery ile alınan ilçe verisi de bir dizi yerine başka bir türde olabilir.
+executeQuery'nin Çıkışı Beklenen Formatta Değil: Çıktıyı kontrol etmeden map işlemi uygulanıyor olabilir.
+Sorunu çözmek için:
+
+Adım 1: Veri Kontrolü Yap
+Veritabanından dönen sonuçların doğru veri yapısına sahip olduğundan emin olun. executeQuery çağrısından sonra dönen sonuçları kontrol etmek için geçici olarak bir console.log ekleyin.
+
+Örneğin:
+
+typescript
+Copy code
+const iller = await executeQuery(`
+  SELECT * FROM iller ORDER BY id
+`);
+console.log("Iller verisi:", iller);
+
+const ilceler = await executeQuery(`
+  SELECT id, ilce 
+  FROM ilceler 
+  WHERE il_id = ? 
+  ORDER BY id
+`, [il.id]);
+console.log(`İlçe verisi (${il.id}):`, ilceler);
+Adım 2: Hatalı Veri Yapısını Düzelt
+iller.map veya ilceler.map kullanmadan önce, dönen verinin gerçekten bir dizi (Array) olduğundan emin olun. Eğer değilse, hata almamak için kontrol ekleyin.
+
+Örneğin:
+
+typescript
+Copy code
+if (!Array.isArray(iller)) {
+  throw new Error("Iller verisi bir dizi değil.");
+}
+
+if (!Array.isArray(ilceler)) {
+  throw new Error(`İlçe verisi bir dizi değil. İl ID: ${il.id}`);
+}
+Güncellenmiş Kod
+Aşağıdaki kod, veri kontrolü ve hata ayıklama için ek kontroller içerir:
+
+typescript
+Copy code
+import { Request, Response } from "express";
+import { executeQuery } from './connection';
+
+// İl ve ilçe verilerini veritabanından çek
+async function getIlIlceFromDB() {
+  try {
+    // Önce illeri al
+    const iller = await executeQuery(`
+      SELECT * FROM iller ORDER BY id
+    `);
+
+    // Veri kontrolü
+    if (!Array.isArray(iller)) {
+      throw new Error("Iller verisi bir dizi değil.");
+    }
+
+    // Her il için ilçeleri al
+    const ilIlceData = await Promise.all(
+      iller.map(async (il: any) => {
+        const ilceler = await executeQuery(`
+          SELECT id, ilce 
+          FROM ilceler 
+          WHERE il_id = ? 
+          ORDER BY id
+        `, [il.id]);
+
+        // Veri kontrolü
+        if (!Array.isArray(ilceler)) {
+          throw new Error(`İlçe verisi bir dizi değil. İl ID: ${il.id}`);
+        }
+
+        return {
+          id: il.id,
+          il: il.il,
+          ilceler: ilceler.map((ilce: any) => ({
+            id: ilce.id,
+            ilce: ilce.ilce
+          }))
+        };
+      })
+    );
+
+    return ilIlceData;
+  } catch (error) {
+    console.error('İl-ilçe verilerini getirme hatası:', error);
+    throw error;
+  }
+}
+
+// API endpoint için response handler
+export const getLocations = async (_req: Request, res: Response) => {
+  try {
+    const ilIlceData = await getIlIlceFromDB();
+    res.json({ success: true, data: ilIlceData });
+  } catch (error) {
+    console.error('İl-ilçe verilerini getirme hatası:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'İl-ilçe verileri alınamadı' 
+    });
+  }
+};
+Sonuç
+executeQuery sonuçlarını kontrol ederek (console.log) dönen verinin beklenen yapıda olduğunu doğrulayabilirsiniz.
+map işlemi yapılmadan önce, dönen verinin bir dizi olup olmadığını kontrol edin.
+Eğer sorun hala devam ederse, veritabanı sorgusundan dönen ham verileri gözden geçirerek düzeltilmesi gereken yerleri bulabilirsiniz.

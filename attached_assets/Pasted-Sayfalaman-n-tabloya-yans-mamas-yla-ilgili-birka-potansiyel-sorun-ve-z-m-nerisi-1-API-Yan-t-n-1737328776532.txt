@@ -1,0 +1,88 @@
+Sayfalamanın tabloya yansımamasıyla ilgili birkaç potansiyel sorun ve çözüm önerisi:
+
+1. API Yanıtını Kontrol Edin
+API çağrısının gerçekten pagination bilgilerini döndürüp döndürmediğini kontrol edin. Özellikle aşağıdaki verilerin doğruluğunu kontrol edin:
+
+totalPages
+currentPage
+limit
+total
+API yanıtını konsolda görüntülemek için kodunuzda aşağıdaki satırın çıktısını kontrol edin:
+
+javascript
+Copy
+Edit
+console.log('Frontend: API yanıtı:', data);
+2. Tabloya Gelen Verilerin pagination İle Uyumlu Olup Olmadığını Kontrol Edin
+Tabloda verilerin tam olarak sayfalama mantığına uygun şekilde işlendiğinden emin olun. Gelen API verisi, mevcut sayfaya göre filtreleniyor mu?
+
+Tabloda şu kod önemli:
+
+javascript
+Copy
+Edit
+{response?.data && response.data.length > 0 ? (
+  response.data.map((user, index) => (
+    <TableRow key={user.id}>
+      <TableCell className="font-medium">
+        {(currentPage - 1) * itemsPerPage + index + 1}
+      </TableCell>
+      ...
+    </TableRow>
+  ))
+) : (
+  <TableRow>
+    <TableCell colSpan={8} className="h-24 text-center">
+      Kullanıcı bulunamadı.
+    </TableCell>
+  </TableRow>
+)}
+Bu kodda response.data değerinin mevcut sayfaya göre verileri içerdiğinden emin olun.
+
+3. Sayfalama Bileşeninin Doğru Şekilde Kullanıldığından Emin Olun
+CustomPagination bileşeninin doğru bir şekilde çağrıldığını ve onPageChange olayının çalıştığını kontrol edin:
+
+javascript
+Copy
+Edit
+<CustomPagination
+  currentPage={response.pagination.currentPage}
+  totalPages={response.pagination.totalPages}
+  onPageChange={(page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Tabloyu yenilemek için gerekli
+  }}
+  totalItems={response.pagination.total}
+  itemsPerPage={itemsPerPage}
+/>
+Özellikle setCurrentPage(page) çağrısının useQuery içinde yeni API çağrısını tetiklediğinden emin olun.
+
+4. State Güncellemelerini Doğru Yaptığınızdan Emin Olun
+Sayfalama mantığına göre currentPage ve itemsPerPage değişkenlerinin API sorgusunda yer aldığından emin olun:
+
+javascript
+Copy
+Edit
+queryKey: [
+  "/api/panel-users",
+  currentPage, // Doğru güncelleniyor mu?
+  itemsPerPage,
+  debouncedSearchTerm,
+  formData.role,
+  formData.status,
+]
+5. CustomPagination ve Gelen Veriyi Konsolda Gözlemleyin
+CustomPagination ve gelen API yanıtını konsolda görüntülemek için:
+
+javascript
+Copy
+Edit
+console.log('Pagination Props:', {
+  currentPage: response.pagination.currentPage,
+  totalPages: response.pagination.totalPages,
+  totalItems: response.pagination.total,
+});
+6. Frontend ve Backend Arasındaki Tutarsızlıklar
+Backend API, her sayfa için farklı veriler döndürmelidir. Örneğin, page=1 ve page=2 isteklerinde farklı sonuçlar gelmelidir. Eğer tüm sayfalar için aynı sonuç dönüyorsa, backend'de bir sorun olabilir.
+
+Bu adımları kontrol ettikten sonra hâlâ çözüm bulunamazsa, API yanıtı ve ilgili frontend kodundaki CustomPagination bileşenini tekrar gözden geçirebiliriz. API yanıtını konsolda paylaşmanız faydalı olabilir.

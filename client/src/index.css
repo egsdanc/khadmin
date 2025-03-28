@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Table styles */
+  .table {
+    @apply w-full;
+  }
+
+  .table-header {
+    @apply bg-muted/50;
+  }
+
+  .table-header th {
+    @apply px-3 py-2;
+    @apply text-left text-sm font-medium;
+    @apply whitespace-nowrap;
+  }
+
+  .table-row td {
+    @apply px-3 py-2;
+    @apply text-sm;
+    @apply whitespace-nowrap;
+  }
+
+  /* Form styles */
+  .form-group {
+    @apply space-y-4 mb-6;
+  }
+
+  .form-field {
+    @apply w-full;
+  }
+
+  /* Button styles */
+  .button-group {
+    @apply flex flex-wrap gap-2;
+    @apply justify-start items-center;
+  }
+}

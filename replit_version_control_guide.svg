@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Ana arka plan -->
+  <rect width="800" height="600" fill="#f6f6f6"/>
+  
+  <!-- Sol menü -->
+  <rect x="0" y="0" width="60" height="600" fill="#1c2333"/>
+  
+  <!-- Tools menüsü -->
+  <rect x="70" y="0" width="200" height="600" fill="#ffffff"/>
+  <text x="85" y="40" font-family="Arial" font-size="16" fill="#333333">Tools</text>
+  
+  <!-- Version Control butonu -->
+  <rect x="80" y="60" width="180" height="40" rx="5" fill="#eef0f5"/>
+  <text x="100" y="85" font-family="Arial" font-size="14" fill="#333333">Version Control</text>
+  
+  <!-- Version listesi -->
+  <rect x="290" y="0" width="510" height="600" fill="#ffffff"/>
+  <text x="310" y="40" font-family="Arial" font-size="16" fill="#333333">Version History</text>
+  
+  <!-- Örnek versiyon girişleri -->
+  <rect x="300" y="60" width="490" height="60" rx="5" fill="#f8f9fa"/>
+  <text x="320" y="85" font-family="Arial" font-size="14" fill="#333333">24 Aralık 2023 23:00</text>
+  <text x="320" y="105" font-family="Arial" font-size="12" fill="#666666">Test modülleri ve detay modalı güncellemesi</text>
+  
+  <!-- Açıklama metni -->
+  <text x="310" y="550" font-family="Arial" font-size="12" fill="#666666">
+    1. Sol menüden "Tools" seçin
+    2. "Version Control" butonuna tıklayın
+    3. Sağdaki listeden 24 Aralık 23:00 versiyonunu bulun
+  </text>
+</svg>

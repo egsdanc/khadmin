@@ -1,0 +1,109 @@
+import { Router } from 'express';
+import { db } from "@db";
+import { asyncHandler } from '../services/error-service';
+import type { Request, Response } from 'express';
+import type { ResultSetHeader, RowDataPacket } from 'mysql2';
+
+const router = Router();
+
+// Komisyon ayarları listeleme
+router.get("/", asyncHandler(async (_req: Request, res: Response) => {
+  const [rows] = await db.query<RowDataPacket[]>(`
+    SELECT ka.*, pu.email as superadmin_email
+    FROM komisyon_ayarlari ka
+    LEFT JOIN panel_users pu ON ka.superadmin_user_id = pu.id
+    WHERE ka.deleted_at IS NULL AND ka.aktif = 1
+    ORDER BY ka.created_at DESC
+    LIMIT 1
+  `);
+
+  const row = rows[0] || null;
+  res.json({ success: true, data: row });
+}));
+
+// Firma bazlı komisyon oranları listeleme
+router.get("/oranlar", asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const aktif = req.query.aktif === 'true';
+  const offset = (page - 1) * limit;
+
+  console.log('Komisyon oranları getiriliyor...');
+  console.log('Query parametreleri:', { page, limit, aktif, offset });
+
+  const [rows] = await db.query<RowDataPacket[]>(`
+    SELECT ko.*,
+      f.name as firma_adi,
+      b.ad as bayi_adi
+    FROM komisyon_oranlari ko
+    LEFT JOIN firmalar f ON ko.firma_id = f.id
+    LEFT JOIN bayiler b ON ko.bayi_id = b.id
+    WHERE ko.deleted_at IS NULL AND ko.aktif = ?
+    ORDER BY ko.created_at DESC
+    LIMIT ? OFFSET ?
+  `, [aktif ? 1 : 0, limit, offset]);
+
+  console.log('Dönen veriler:', rows);
+
+  const [countResult] = await db.query<RowDataPacket[]>(`
+    SELECT COUNT(*) as total
+    FROM komisyon_oranlari
+    WHERE deleted_at IS NULL AND aktif = ?
+  `, [aktif ? 1 : 0]);
+
+  const total = countResult[0]?.total || 0;
+  console.log('Toplam kayıt sayısı:', total);
+
+  res.json({ 
+    success: true, 
+    data: rows,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    }
+  });
+}));
+
+// Komisyon hesaplama endpoint'i
+router.post("/hesapla", asyncHandler(async (req: Request, res: Response) => {
+  const { test_id, ucret } = req.body;
+
+  if (!test_id || !ucret) {
+    throw new Error("Test ID ve ücret zorunludur");
+  }
+
+  const [testBilgileri] = await db.query<RowDataPacket[]>(`
+    SELECT t.*, f.id as firma_id 
+    FROM tests t
+    LEFT JOIN firmalar f ON t.firma_id = f.id
+    WHERE t.id = ?`, [test_id]
+  );
+
+  if (!testBilgileri || !testBilgileri[0]) {
+    throw new Error("Test bulunamadı");
+  }
+
+  const test = testBilgileri[0];
+
+  const [komisyonOranlari] = await db.query<RowDataPacket[]>(`
+    SELECT * FROM komisyon_oranlari 
+    WHERE firma_id = ? AND deleted_at IS NULL AND aktif = 1
+    ORDER BY created_at DESC LIMIT 1
+  `, [test.firma_id]);
+
+  const oran = komisyonOranlari[0] || { firma_oran: 0, bayi_oran: 0, sistem_oran: 0 };
+
+  const komisyonDetay = {
+    test_id,
+    ucret,
+    firma_komisyon: ucret * (oran.firma_oran || 0) / 100,
+    bayi_komisyon: ucret * (oran.bayi_oran || 0) / 100,
+    sistem_komisyon: ucret * (oran.sistem_oran || 0) / 100
+  };
+
+  res.json({ success: true, data: komisyonDetay });
+}));
+
+export default router;

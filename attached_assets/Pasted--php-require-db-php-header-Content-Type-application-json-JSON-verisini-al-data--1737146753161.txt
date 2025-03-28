@@ -1,0 +1,99 @@
+<?php
+require 'db.php';
+header('Content-Type: application/json');
+
+// JSON verisini al
+$data = json_decode(file_get_contents('php://input'), true);
+
+if (empty($data)) {
+    echo json_encode(['error' => 'Gönderilen veri boş veya hatalı.']);
+    exit;
+}
+
+try {
+    $pdo->beginTransaction(); // Transaction başlatıyoruz
+
+    // İlk kayıttan kullanıcı ID'sini alalım
+    $userId = $data[0]['usersid'];
+
+    // Kullanıcının bayi bilgilerini alalım
+    $stmtUser = $pdo->prepare("SELECT bayi_id FROM kullanicilar WHERE id = ?");
+    $stmtUser->execute([$userId]);
+    $userInfo = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+    if (!$userInfo || !$userInfo['bayi_id']) {
+        throw new Exception('Kullanıcı bayi bilgisi bulunamadı.');
+    }
+
+    // Bayinin mevcut bakiyesini ve komisyon oranını alalım
+    $stmtBayi = $pdo->prepare("SELECT bakiye, bayi_orani FROM bayiler WHERE id = ?");
+    $stmtBayi->execute([$userInfo['bayi_id']]);
+    $bayiInfo = $stmtBayi->fetch(PDO::FETCH_ASSOC);
+
+    if (!$bayiInfo) {
+        throw new Exception('Bayi bilgisi bulunamadı.');
+    }
+
+    // test_id kontrolü ve artırma işlemi
+    $stmt = $pdo->query("SELECT MAX(test_id) AS max_test_id FROM testler");
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    $newTestId = ($result['max_test_id'] ?? 0) + 1;
+
+    // Toplam ücreti hesapla
+    $totalUcret = 0;
+    foreach ($data as $row) {
+        $totalUcret += floatval($row['ucret']);
+    }
+
+    // Bayinin kendi oranına göre komisyon hesapla
+    $komisyon = $totalUcret * ($bayiInfo['bayi_orani'] / 100);
+
+    // Yeni bakiye kontrolü
+    $yeniBakiye = $bayiInfo['bakiye'] - $komisyon;
+    if ($yeniBakiye < 0) {
+        throw new Exception('Yetersiz bakiye. Gereken: ' . $komisyon . ' TL');
+    }
+
+    // Tüm satırları aynı test_id ile ekliyoruz
+    foreach ($data as $row) {
+        $stmt = $pdo->prepare("
+            INSERT INTO testler 
+            (test_id, plaka, sase, motor, marka, model, yil, gosterge_km, paket, ucret, aciklama, kontrolmod, km, usersid, tarih) 
+            VALUES 
+            (:test_id, :plaka, :sase, :motor, :marka, :model, :yil, :gosterge_km, :paket, :ucret, :aciklama, :kontrolmod, :km, :usersid, NOW())
+        ");
+        $stmt->execute([
+            ':test_id' => $newTestId,
+            ':plaka' => $row['plaka'],
+            ':sase' => $row['sase'],
+            ':motor' => $row['motor'],
+            ':marka' => $row['marka'],
+            ':model' => $row['model'],
+            ':yil' => $row['yil'],
+            ':gosterge_km' => $row['gosterge_km'],
+            ':paket' => $row['paket'],
+            ':ucret' => $row['ucret'],
+            ':aciklama' => $row['aciklama'],
+            ':kontrolmod' => $row['kontrolmod'],
+            ':km' => $row['km'],
+            ':usersid' => $row['usersid']
+        ]);
+    }
+
+    // Bayi bakiyesini güncelle
+    $stmtUpdateBakiye = $pdo->prepare("UPDATE bayiler SET bakiye = bakiye - ? WHERE id = ?");
+    $stmtUpdateBakiye->execute([$komisyon, $userInfo['bayi_id']]);
+
+    $pdo->commit(); // İşlemleri kaydediyoruz
+
+    echo json_encode([
+        'message' => 'Veriler başarıyla kaydedildi.',
+        'test_id' => $newTestId,
+        'kesilen_komisyon' => $komisyon,
+        'kalan_bakiye' => $yeniBakiye
+    ]);
+} catch (Exception $e) {
+    $pdo->rollBack(); // Hata durumunda işlemleri geri al
+    echo json_encode(['error' => $e->getMessage()]);
+}
+?>

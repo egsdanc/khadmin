@@ -1,0 +1,206 @@
+Evet, **React** frontend’inizi ve **Node.js** backend’inizi kullanarak **İyzico entegrasyonu** yapmak istiyorsanız, **Node.js** tarafında **iyzipay** npm kütüphanesini kullanmanız en doğru tercih olacaktır. İyzico, ödeme işlemlerini güvenli bir şekilde sunucu tarafında yapmanızı önerdiği için bu yöntem hem güvenli hem de iyi bir entegrasyon sağlar.
+
+### **İyzico Node.js ile React Entegrasyonu Nasıl Yapılır?**
+
+---
+
+### **1. Node.js tarafına `iyzipay` kütüphanesini yükleyin**
+```bash
+npm install iyzipay
+```
+
+---
+
+### **2. Node.js Backend Kodu**
+
+Backend tarafında, kullanıcıdan gelen ödeme bilgilerini alıp İyzico ile iletişim kurmak için bir API endpoint oluşturun.
+
+#### Örnek: `server.js` (Express kullanarak)
+```javascript
+const express = require('express');
+const bodyParser = require('body-parser');
+const Iyzipay = require('iyzipay');
+
+const app = express();
+app.use(bodyParser.json());
+
+// İyzico API bilgilerinizi buraya yazın
+const iyzipay = new Iyzipay({
+  apiKey: 'your_api_key',
+  secretKey: 'your_secret_key',
+  uri: 'https://sandbox-api.iyzipay.com',
+});
+
+app.post('/api/payment', (req, res) => {
+  const { cardHolder, cardNumber, expireMonth, expireYear, cvc, price } = req.body;
+
+  const request = {
+    locale: Iyzipay.LOCALE.TR,
+    conversationId: '123456789',
+    price: price,
+    paidPrice: price,
+    currency: Iyzipay.CURRENCY.TRY,
+    installment: 1,
+    basketId: 'B67832',
+    paymentCard: {
+      cardHolderName: cardHolder,
+      cardNumber: cardNumber,
+      expireMonth: expireMonth,
+      expireYear: expireYear,
+      cvc: cvc,
+    },
+    buyer: {
+      id: 'BY789',
+      name: 'Ali Veli',
+      surname: 'Yılmaz',
+      email: 'test@email.com',
+      identityNumber: '74300864791',
+      registrationAddress: 'Cihangir Mah. Istanbul',
+      city: 'Istanbul',
+      country: 'Turkey',
+    },
+    callbackUrl: 'https://yourfrontenddomain.com/payment-callback',
+  };
+
+  iyzipay.payment.create(request, (err, result) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.json({ status: result.status, message: result.errorMessage || 'Ödeme başarılı' });
+    }
+  });
+});
+
+app.listen(3001, () => {
+  console.log('Server running on http://localhost:3001');
+});
+```
+
+---
+
+### **3. React Frontend Kodu**
+
+Kullanıcı ödeme bilgilerini girecek ve bu bilgileri backend’e gönderecek bir form hazırlayın:
+
+#### Örnek: `PaymentForm.js`
+```jsx
+import React, { useState } from 'react';
+import axios from 'axios';
+
+function PaymentForm() {
+  const [cardHolder, setCardHolder] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [expireMonth, setExpireMonth] = useState('');
+  const [expireYear, setExpireYear] = useState('');
+  const [cvc, setCvc] = useState('');
+  const [price, setPrice] = useState('');
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post('http://localhost:3001/api/payment', {
+        cardHolder,
+        cardNumber,
+        expireMonth,
+        expireYear,
+        cvc,
+        price,
+      });
+      setMessage(response.data.message);
+    } catch (error) {
+      setMessage('Ödeme sırasında bir hata oluştu.');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h2>Kart Bilgilerini Girin</h2>
+
+      <label>Kart Sahibi Adı:</label>
+      <input 
+        type="text" 
+        value={cardHolder} 
+        onChange={(e) => setCardHolder(e.target.value)} 
+        required 
+      />
+
+      <label>Kart Numarası:</label>
+      <input 
+        type="text" 
+        value={cardNumber} 
+        onChange={(e) => setCardNumber(e.target.value)} 
+        required 
+      />
+
+      <label>Son Kullanma Tarihi (Ay):</label>
+      <input 
+        type="text" 
+        value={expireMonth} 
+        onChange={(e) => setExpireMonth(e.target.value)} 
+        required 
+      />
+
+      <label>Son Kullanma Tarihi (Yıl):</label>
+      <input 
+        type="text" 
+        value={expireYear} 
+        onChange={(e) => setExpireYear(e.target.value)} 
+        required 
+      />
+
+      <label>CVV:</label>
+      <input 
+        type="password" 
+        value={cvc} 
+        onChange={(e) => setCvc(e.target.value)} 
+        required 
+      />
+
+      <label>Ödeme Tutarı (TL):</label>
+      <input 
+        type="text" 
+        value={price} 
+        onChange={(e) => setPrice(e.target.value)} 
+        required 
+      />
+
+      <button type="submit">Ödemeyi Tamamla</button>
+
+      {message && <p>{message}</p>}
+    </form>
+  );
+}
+
+export default PaymentForm;
+```
+
+---
+
+### **4. Backend ve Frontend’i Çalıştırın**
+- **Backend:**  
+  ```bash
+  node server.js
+  ```
+
+- **React Frontend:**  
+  ```bash
+  npm start
+  ```
+
+---
+
+### **5. Test ve Doğrulama**
+- İlk olarak **sandbox ortamında** test edin.
+- Ödeme işlemi tamamlandıktan sonra İyzico’nun döndürdüğü sonucu inceleyerek başarılı veya başarısız senaryolara göre kullanıcıya bilgi verin.
+- **Gerçek ödeme ortamına geçmeden önce** İyzico’nun gerekli güvenlik ve doğrulama kurallarını kontrol edin.
+
+---
+
+### **Sonuç**
+Bu yöntemle:
+- **Frontend** kullanıcıdan ödeme bilgilerini alır.
+- **Backend** İyzico’ya güvenli bir şekilde bu bilgileri iletir.
+- Sonuç, React frontend’e geri dönerek kullanıcıya gösterilir.
+
+✅ **Güvenlik Notu:** Kart bilgileri frontend’de hiçbir şekilde saklanmamalı ve doğrudan backend’e gönderilmelidir.

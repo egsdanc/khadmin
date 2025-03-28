@@ -1,0 +1,205 @@
+import { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+// Database configuration
+const dbConfig = {
+  charset: 'utf8mb4',
+  host: process.env.MYSQL_HOST || "your_host",
+  user: process.env.MYSQL_USER || "your_user",
+  password: process.env.MYSQL_PASSWORD || "your_password",
+  database: process.env.MYSQL_DATABASE || "your_database",
+};
+
+console.log("Database config loaded", dbConfig);
+
+// Create a database connection pool
+const db = mysql.createPool(dbConfig);
+
+// Depolama konfigürasyonu
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join('public', 'uploads', 'blog-images');
+    
+    // Klasör yoksa oluştur
+    if (!fs.existsSync(uploadPath)){
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    // Benzersiz dosya adı oluştur
+    const uniqueSuffix = Date.now() + '-' + 
+      crypto.randomBytes(10).toString('hex');
+    cb(null, `blog-image-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+// Dosya filtreleme
+const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  // Sadece resim dosyaları kabul et
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Desteklenmeyen dosya türü. Sadece resim dosyaları yükleyebilirsiniz.'));
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
+  }
+});
+
+const router = Router();
+
+// Blog ekleme endpoint'i
+router.post('/', upload.single('coverImage'), async (req, res) => {
+  let connection;
+  try {
+    const { title, content } = req.body;
+    
+    // Input validation
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: 'Blog başlığı gereklidir' });
+    }
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ message: 'Blog içeriği gereklidir' });
+    }
+
+    // Cover image check
+    if (!req.file) {
+      return res.status(400).json({ message: 'Kapak fotoğrafı gereklidir' });
+    }
+
+    // Sanitize and validate title and content length
+    if (title.length > 255) {
+      return res.status(400).json({ message: 'Blog başlığı 255 karakterden uzun olamaz' });
+    }
+
+    if (content.length > 65535) {  // Typical TEXT column limit
+      return res.status(400).json({ message: 'Blog içeriği çok uzun' });
+    }
+
+    const coverImagePath = path.join('uploads', 'blog-images', path.basename(req.file.path));
+
+    // Open a new connection to the database
+    connection = await db.getConnection();
+
+    // Create table query (with IF NOT EXISTS)
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS blogs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        cover_image VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await connection.query(createTableQuery);
+
+    // Insert blog post
+    const insertQuery = `
+      INSERT INTO blogs 
+      (title, content, cover_image) 
+      VALUES (?, ?, ?)
+    `;
+    const [result] = await connection.execute(insertQuery, [
+      title, 
+      content, 
+      coverImagePath
+    ]);
+
+    res.status(201).json({
+      message: 'Blog başarıyla eklendi',
+      blogId: (result as any).insertId,
+      coverImageUrl: `/${coverImagePath}`
+    });
+  } catch (error) {
+    console.error('Blog ekleme hatası:', error);
+    
+    // More granular error handling
+    if (error instanceof multer.MulterError) {
+      // Multer-specific errors (file size, file type)
+      return res.status(400).json({ 
+        message: error.message || 'Dosya yükleme hatası' 
+      });
+    }
+
+    if ((error as any).code === 'ER_DATA_TOO_LONG') {
+      return res.status(400).json({ 
+        message: 'Girilen veriler çok uzun' 
+      });
+    }
+
+    // Database connection or other unexpected errors
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Dosya silme hatası:', unlinkError);
+      }
+    }
+
+    res.status(500).json({ 
+      message: 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.', 
+      error: (error as Error).message 
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+router.get('/', async (req, res) => {
+  try {
+    res.status(200).json({
+      message: 'İstek başarılı',
+      blogs: [
+        { id: 1, title: 'İlk Blog', content: 'Bu bir dummy içeriktir.' },
+        { id: 2, title: 'İkinci Blog', content: 'Bu da bir başka dummy içeriktir.' }
+      ]
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Sunucu hatası.', 
+      error: (error as Error).message 
+    });
+  }
+});
+
+// Fotoğraf servisi
+router.get('/getphoto/:imageName', async (req, res) => {
+  const { imageName } = req.params;
+
+  // Fotoğraf yolunu oluştur (mutlak yol)
+  const filePath = path.resolve('public', 'uploads', 'blog-images', imageName);
+  
+  // Fotoğraf dosyasının var olup olmadığını kontrol et
+  fs.stat(filePath, (err, stats) => {
+    if (err || !stats.isFile()) {
+      return res.status(404).json({ message: 'Fotoğraf bulunamadı' });
+    }
+    
+    // Fotoğraf dosyasını yanıt olarak döndür
+    res.sendFile(filePath);
+  });
+});
+
+
+
+export default router;

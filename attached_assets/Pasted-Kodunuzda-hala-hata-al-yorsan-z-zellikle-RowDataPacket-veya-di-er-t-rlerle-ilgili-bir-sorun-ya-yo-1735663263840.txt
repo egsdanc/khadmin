@@ -1,0 +1,107 @@
+Kodunuzda hala hata alıyorsanız, özellikle RowDataPacket veya diğer türlerle ilgili bir sorun yaşıyorsanız, aşağıdaki adımları takip ederek sorunu çözebilirsiniz:
+
+1. RowDataPacket Türüyle İlgili Sorun
+RowDataPacket türü mysql2 paketinden doğru bir şekilde içe aktarılmalıdır. Aşağıdaki import satırından emin olun:
+
+typescript
+Copy code
+import type { RowDataPacket, ResultSetHeader } from 'mysql2';
+Eğer bu satır doğruysa ve hala hata alıyorsanız, tür tanımlarını any ile test ederek çalışıp çalışmadığını kontrol edebilirsiniz:
+
+typescript
+Copy code
+const [rows] = await db.query<any[]>(`
+  SELECT ...
+`);
+Bu şekilde hata devam etmiyorsa, RowDataPacket ile ilgili bir tür uyuşmazlığı vardır ve türleri yeniden gözden geçirmeniz gerekir.
+
+2. Türlerin ve Alanların Doğruluğunu Kontrol Edin
+Tanımladığınız interfaceler (ör. KomisyonAyarlari, KomisyonOrani) veri tabanındaki sütunlarla birebir eşleşmelidir. Örneğin, bir sütunun ismi superadmin_user_id yerine super_admin_id gibi farklı olabilir. Tabloların sütun isimlerini sorgularla eşleştirin.
+
+3. Hatalı Alan veya Eksik Veri
+LEFT JOIN gibi sorgular bazen null döner. Eğer sorgu sonucu null bir değeri RowDataPacket ile eşleştirmeye çalışıyorsanız hata alabilirsiniz. Bu tür durumlar için türü opsiyonel olarak tanımlayın:
+
+typescript
+Copy code
+interface KomisyonAyarlari extends RowDataPacket {
+  superadmin_email?: string | null;
+}
+4. TypeScript ile Tür Çakışmalarını İnceleyin
+Eğer TypeScript türleriyle ilgili bir hata varsa, tsconfig.json dosyanızı kontrol edin. Aşağıdaki ayarlarınızın olduğundan emin olun:
+
+json
+Copy code
+{
+  "compilerOptions": {
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "module": "CommonJS",
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}
+strict modunu devre dışı bırakarak test etmek için:
+
+json
+Copy code
+"strict": false
+5. Hata Ayıklama
+Hangi noktada hata aldığınızı belirlemek için console.log kullanarak veri çıktısını kontrol edin. Örneğin:
+
+typescript
+Copy code
+console.log('Sorgu sonucu:', rows);
+6. MySQL2 Sürümlerini Kontrol Edin
+mysql2 ve @types/mysql2 sürümlerinin güncel ve uyumlu olduğundan emin olun:
+
+mysql2: En az 2.x.x
+@types/mysql2: En az 2.x.x
+Yüklemek için:
+
+bash
+Copy code
+npm install mysql2@latest
+npm install --save-dev @types/mysql2@latest
+7. Güncel Kod Örneği
+Aşağıda, hataların giderildiği güncel bir kod örneği bulunmaktadır:
+
+typescript
+Copy code
+import { Router } from 'express';
+import { db } from "@db";
+import { asyncHandler } from '../services/error-service';
+import type { Request, Response } from 'express';
+import type { RowDataPacket, ResultSetHeader } from 'mysql2';
+
+interface KomisyonAyarlari extends RowDataPacket {
+  id: number;
+  superadmin_user_id: number;
+  genel_komisyon_oran: number;
+  kdv_oran: number;
+  aktif: boolean;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
+  superadmin_email?: string | null;
+}
+
+const router = Router();
+
+// Örnek bir endpoint
+router.get("/", asyncHandler(async (_req: Request, res: Response) => {
+  const [rows] = await db.query<KomisyonAyarlari[]>(`
+    SELECT ka.*, pu.email as superadmin_email
+    FROM komisyon_ayarlari ka
+    LEFT JOIN panel_users pu ON ka.superadmin_user_id = pu.id
+    WHERE ka.deleted_at IS NULL AND ka.aktif = 1
+    ORDER BY ka.created_at DESC
+    LIMIT 1
+  `);
+
+  console.log('Sorgu sonucu:', rows);
+  res.json({ success: true, data: rows?.[0] || null });
+}));
+
+export default router;

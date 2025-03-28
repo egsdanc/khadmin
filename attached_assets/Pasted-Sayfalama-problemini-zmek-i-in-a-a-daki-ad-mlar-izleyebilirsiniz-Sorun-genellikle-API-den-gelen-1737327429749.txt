@@ -1,0 +1,88 @@
+Sayfalama problemini çözmek için aşağıdaki adımları izleyebilirsiniz. Sorun genellikle API'den gelen verilerin sayfalama mantığına uygun olmaması, currentPage veya itemsPerPage değişkenlerinin doğru şekilde API'ye gönderilmemesi ya da gelen yanıttaki pagination bilgilerinin yanlış işlenmesinden kaynaklanır.
+
+Sorunun Olası Nedenleri ve Çözümleri:
+1. API'den Gelen Veriler
+API'nin sayfalama için doğru şekilde yapılandırıldığından emin olun:
+
+Gelen yanıt total, totalPages, currentPage, ve limit gibi gerekli sayfalama bilgilerini içeriyor mu?
+API, page ve limit parametrelerini kullanarak doğru sonuç döndürüyor mu?
+Kontrol: API çağrısının URL'sini konsola yazdırarak, doğru parametrelerle çağrıldığından emin olun.
+
+javascript
+Copy
+Edit
+console.log(`/api/panel-users?${params.toString()}`);
+2. Yanıtın İşlenmesi
+Yanıtın sayfalama bilgileri yanlışsa, CustomPagination bileşeni doğru çalışmaz. Gelen yanıtın formatını kontrol edin ve doğru şekilde işlendiğinden emin olun.
+
+3. CustomPagination Bileşeni
+CustomPagination bileşeni doğru bir onPageChange olayını tetikliyor mu? setCurrentPage çağrısı yapılıyor mu? Ayrıca, currentPage değeri doğru API'ye aktarılıyor mu?
+
+tsx
+Copy
+Edit
+<CustomPagination
+  currentPage={currentPage}
+  totalPages={response.pagination.totalPages}
+  onPageChange={(page) => {
+    setCurrentPage(page); // Sayfa numarasını güncelleyin
+  }}
+  totalItems={response.pagination.total}
+  itemsPerPage={itemsPerPage}
+/>
+4. State Güncellemeleri
+State güncellemelerinin doğru sırayla yapıldığından emin olun. setCurrentPage çağrısından sonra useQuery verileri tekrar yüklemelidir.
+
+tsx
+Copy
+Edit
+const { data: response, isFetching } = useQuery<ApiResponse>({
+  queryKey: ["/api/panel-users", currentPage, itemsPerPage, debouncedSearchTerm, formData.role, formData.status],
+  queryFn: async () => {
+    const params = new URLSearchParams({
+      page: currentPage.toString(),
+      limit: itemsPerPage.toString(),
+      ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+      ...(formData.role !== "all" && { role: formData.role }),
+      ...(formData.status !== "all" && { status: formData.status }),
+    });
+    const response = await fetch(`/api/panel-users?${params.toString()}`, {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error("API isteği başarısız oldu");
+    }
+    return response.json();
+  },
+});
+5. CustomPagination'ın İşleyişi
+Eğer yukarıdaki adımlara rağmen sorun çözülmediyse, CustomPagination bileşenini debug edin ve aşağıdaki gibi basit bir alternatif test edin:
+
+tsx
+Copy
+Edit
+<div className="pagination">
+  {Array.from({ length: response.pagination.totalPages }, (_, i) => (
+    <button
+      key={i}
+      className={currentPage === i + 1 ? "active" : ""}
+      onClick={() => setCurrentPage(i + 1)}
+    >
+      {i + 1}
+    </button>
+  ))}
+</div>
+Debugging ve Kontrol Adımları
+Konsolda Çıktıları Kontrol Edin:
+
+API çağrısının URL'si doğru mu?
+Gelen yanıtta pagination bilgileri doğru mu?
+CustomPagination'ın onPageChange işlevi doğru şekilde çağrılıyor mu?
+Manuel Test: Yukarıdaki alternatif basit sayfalama bileşeniyle sorunun CustomPagination kaynaklı olup olmadığını test edin.
+
+API Yanıtını Doğrulama: API'nin döndürdüğü veriyi konsolda yazdırın ve beklenen pagination bilgilerini içerip içermediğini kontrol edin:
+
+javascript
+Copy
+Edit
+console.log(response);

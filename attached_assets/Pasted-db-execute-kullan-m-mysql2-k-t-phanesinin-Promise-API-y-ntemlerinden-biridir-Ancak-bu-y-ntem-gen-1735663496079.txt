@@ -1,0 +1,191 @@
+db.execute kullanımı, mysql2 kütüphanesinin Promise API yöntemlerinden biridir. Ancak, bu yöntem genellikle "prepared statements" için kullanılır ve sorgularınızda hem query hem de execute kullanmayı karıştırmak, tür çakışmalarına neden olabilir.
+
+Bu tür sorunları çözmek için aşağıdaki adımları izleyebilirsiniz:
+
+1. db.query Yerine db.execute Kullanımı
+db.execute sadece "prepared statements" için gereklidir ve her zaman ? yer tutucularını destekler. Eğer sorgularınızda dinamik parametre kullanıyorsanız, db.execute kullanımı doğrudur.
+
+Örnek:
+
+typescript
+Copy code
+const [rows] = await db.execute<RowDataPacket[]>(`
+  SELECT * FROM tablename WHERE column = ?
+`, [value]);
+2. db.query Kullanmayı Tercih Edin
+Eğer "prepared statements" özelliklerine ihtiyaç duymuyorsanız (ör. parametre doğrulama, önbellekleme), db.query daha basit bir alternatiftir:
+
+Örnek:
+
+typescript
+Copy code
+const [rows] = await db.query<RowDataPacket[]>(`
+  SELECT * FROM tablename WHERE column = ?
+`, [value]);
+3. Güncellenmiş Kod
+Tüm db.execute çağrılarını db.query ile değiştirdim. Ayrıca tür tanımlamalarını ve hata kontrolünü de ekledim:
+
+typescript
+Copy code
+import { Router } from 'express';
+import { db } from "@db";
+import { asyncHandler } from '../services/error-service';
+import type { Request, Response } from 'express';
+import type { RowDataPacket, ResultSetHeader } from 'mysql2';
+
+interface KomisyonAyarlari extends RowDataPacket {
+  id: number;
+  superadmin_user_id: number;
+  genel_komisyon_oran: number;
+  kdv_oran: number;
+  aktif: boolean;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
+  superadmin_email?: string | null;
+}
+
+interface KomisyonOrani extends RowDataPacket {
+  id: number;
+  firma_id: number;
+  bayi_id: number | null;
+  bayi_oran: number;
+  firma_oran: number;
+  sistem_oran: number;
+  aktif: boolean;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
+  firma_adi?: string | null;
+  bayi_adi?: string | null;
+}
+
+interface TestBilgisi extends RowDataPacket {
+  id: number;
+  firma_id: number;
+}
+
+const router = Router();
+
+// Komisyon ayarları listeleme
+router.get("/", asyncHandler(async (_req: Request, res: Response) => {
+  const [rows] = await db.query<KomisyonAyarlari[]>(`
+    SELECT ka.*, pu.email as superadmin_email
+    FROM komisyon_ayarlari ka
+    LEFT JOIN panel_users pu ON ka.superadmin_user_id = pu.id
+    WHERE ka.deleted_at IS NULL AND ka.aktif = 1
+    ORDER BY ka.created_at DESC
+    LIMIT 1
+  `);
+
+  res.json({ success: true, data: rows?.[0] || null });
+}));
+
+// Firma bazlı komisyon oranları listeleme
+router.get("/oranlar", asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const aktif = req.query.aktif === 'true';
+  const offset = (page - 1) * limit;
+
+  const [rows] = await db.query<KomisyonOrani[]>(`
+    SELECT ko.*,
+      f.name as firma_adi,
+      b.ad as bayi_adi
+    FROM komisyon_oranlari ko
+    LEFT JOIN firmalar f ON ko.firma_id = f.id
+    LEFT JOIN bayiler b ON ko.bayi_id = b.id
+    WHERE ko.deleted_at IS NULL AND ko.aktif = ?
+    ORDER BY ko.created_at DESC
+    LIMIT ? OFFSET ?
+  `, [aktif ? 1 : 0, limit, offset]);
+
+  const [countResult] = await db.query<(RowDataPacket & { total: number })[]>(`
+    SELECT COUNT(*) as total
+    FROM komisyon_oranlari
+    WHERE deleted_at IS NULL AND aktif = ?
+  `, [aktif ? 1 : 0]);
+
+  const total = countResult?.[0]?.total || 0;
+
+  res.json({ 
+    success: true, 
+    data: rows,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    }
+  });
+}));
+
+// Yeni komisyon oranı ekleme
+router.post("/oranlar", asyncHandler(async (req: Request, res: Response) => {
+  const { firma_id, bayi_id, bayi_oran, firma_oran, sistem_oran } = req.body;
+
+  await db.query(`
+    UPDATE komisyon_oranlari 
+    SET aktif = 0, updated_at = NOW() 
+    WHERE firma_id = ? AND bayi_id = ? AND aktif = 1
+  `, [firma_id, bayi_id]);
+
+  const [result] = await db.query<ResultSetHeader>(`
+    INSERT INTO komisyon_oranlari (
+      firma_id, bayi_id, bayi_oran, firma_oran, sistem_oran, 
+      aktif, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW())
+  `, [firma_id, bayi_id, bayi_oran, firma_oran, sistem_oran]);
+
+  if (result.insertId) {
+    res.json({ 
+      success: true,
+      message: "Komisyon oranı başarıyla eklendi",    
+      data: { id: result.insertId }  
+    });
+  } else {
+    res.status(500).json({ success: false, message: 'Komisyon oranı eklenirken bir hata oluştu' });
+  }
+}));
+
+// Komisyon hesaplama endpoint'i
+router.post("/hesapla", asyncHandler(async (req: Request, res: Response) => {
+  const { test_id, toplam_tutar } = req.body;
+
+  if (!test_id || !toplam_tutar) {
+    throw new Error("Test ID ve toplam tutar zorunludur");
+  }
+
+  const [testRows] = await db.query<TestBilgisi[]>(`
+    SELECT t.*, f.id as firma_id 
+    FROM tests t
+    LEFT JOIN firmalar f ON t.firma_id = f.id
+    WHERE t.id = ?
+  `, [test_id]);
+
+  const test = testRows?.[0];
+  if (!test) {
+    throw new Error("Test bulunamadı");
+  }
+
+  const [oranRows] = await db.query<KomisyonOrani[]>(`
+    SELECT * FROM komisyon_oranlari 
+    WHERE firma_id = ? AND deleted_at IS NULL AND aktif = 1
+    ORDER BY created_at DESC LIMIT 1
+  `, [test.firma_id]);
+
+  const oran = oranRows?.[0];
+  const komisyonDetay = {
+    test_id,
+    toplam_tutar,
+    firma_komisyon: toplam_tutar * (oran?.firma_oran || 0) / 100,
+    bayi_komisyon: toplam_tutar * (oran?.bayi_oran || 0) / 100,
+    sistem_komisyon: toplam_tutar * (oran?.sistem_oran || 0) / 100
+  };
+
+  res.json({ success: true, data: komisyonDetay });
+}));
+
+export default router;
+4. Sonuç
+Bu değişiklikler, db.query yöntemini kullanarak tür sorunlarını ve db.execute hatalarını giderir.

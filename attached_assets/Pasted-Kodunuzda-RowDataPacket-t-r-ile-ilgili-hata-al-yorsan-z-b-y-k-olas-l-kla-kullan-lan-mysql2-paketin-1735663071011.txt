@@ -1,0 +1,81 @@
+Kodunuzda RowDataPacket türü ile ilgili hata alıyorsanız, büyük olasılıkla kullanılan mysql2 paketinin tür tanımlarından kaynaklanıyordur. Sorunu çözmek için aşağıdaki adımları izleyebilirsiniz:
+
+1. mysql2 Paketinin ve Tür Tanımlarının Yüklü Olduğundan Emin Olun
+Tür tanımlarının doğru çalışabilmesi için hem mysql2 hem de ilgili tür tanımlamaları (@types/mysql2) paketlerini yüklemeniz gerekir:
+
+bash
+Copy code
+npm install mysql2
+npm install --save-dev @types/mysql2
+2. RowDataPacket İçin Doğru İçe Aktarımı Kontrol Edin
+Eğer RowDataPacket kullanıyorsanız, bunu doğru şekilde içe aktarmanız gerekir. mysql2 paketinde RowDataPacket şu şekilde kullanılmalıdır:
+
+typescript
+Copy code
+import { RowDataPacket } from 'mysql2';
+3. RowDataPacket'in Türü İle İlgili Hataları Kontrol Edin
+Bazı durumlarda, RowDataPacket türünü belirttiğiniz veriyle eşleştirirken sorun yaşayabilirsiniz. Bu tür sorunları önlemek için any kullanarak test edin ve ardından türü tekrar daraltın:
+
+typescript
+Copy code
+const [rows]: any[] = await db.query(`
+  SELECT ...
+`);
+4. RowDataPacket[] Kullandığınız Yerlerdeki Hataları Düzeltin
+Sorgu sonuçlarını döndürürken doğru türü kullanmalısınız. Örneğin, aşağıdaki satırlarda:
+
+typescript
+Copy code
+const [rows] = await db.query<RowDataPacket[]>(`
+  SELECT ...
+`);
+Eğer tür çakışması sorunu yaşıyorsanız, as anahtar kelimesiyle sonucu açıkça RowDataPacket[] olarak belirtebilirsiniz:
+
+typescript
+Copy code
+const [rows] = (await db.query(`
+  SELECT ...
+`)) as RowDataPacket[];
+5. RowDataPacket'i Yerel Türlerle Eşleştirme
+Eğer sorgunuzda dönen sonuçlar belirli bir nesne yapısını takip ediyorsa, kendi türünüzü tanımlayıp bu türü kullanabilirsiniz:
+
+typescript
+Copy code
+interface KomisyonAyarlari extends RowDataPacket {
+  id: number;
+  superadmin_user_id: number;
+  aktif: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+const [rows] = await db.query<KomisyonAyarlari[]>(`
+  SELECT ...
+`);
+Güncel Kod Örneği
+Düzeltmelerle birlikte, RowDataPacket içeren bir kod bloğu şu şekilde görünebilir:
+
+typescript
+Copy code
+import { Router } from 'express';
+import { db } from '@db';
+import { asyncHandler } from '../services/error-service';
+import { RowDataPacket } from 'mysql2';
+import type { Request, Response } from 'express';
+
+const router = Router();
+
+router.get("/", asyncHandler(async (_req: Request, res: Response) => {
+  const [rows] = (await db.query(`
+    SELECT ka.*, pu.email as superadmin_email
+    FROM komisyon_ayarlari ka
+    LEFT JOIN panel_users pu ON ka.superadmin_user_id = pu.id
+    WHERE ka.deleted_at IS NULL AND ka.aktif = 1
+    ORDER BY ka.created_at DESC
+    LIMIT 1
+  `)) as [RowDataPacket[]];
+
+  res.json({ success: true, data: rows?.[0] || null });
+}));
+
+export default router;
