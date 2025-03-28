@@ -71,7 +71,7 @@ export function setupAuth(app: Express) {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       httpOnly: true,
       sameSite: 'lax',
-      secure: false // false for development
+      secure: true // false for development
     },
     store: new MemoryStore({
       checkPeriod: 86400000 // cleanup every 24 hours

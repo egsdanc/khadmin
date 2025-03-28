@@ -17,7 +17,9 @@ app.use(cors({
     "https://dynobiloto.repl.co",
     "https://8080-dynobiloto.repl.co",
     "https://sandbox-api.iyzipay.com",
-    "https://sandbox-merchantgw.iyzipay.com"
+    "https://sandbox-merchantgw.iyzipay.com",
+    "http://localhost:5000",
+    process.env.BASE_URL || ""
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
