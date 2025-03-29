@@ -172,6 +172,33 @@ export default function BlogEklePage() {
     }
   };
 
+  // Add custom CSS for Quill
+  // This is important to fix the overlap issue
+  useEffect(() => {
+    // Add custom styling to prevent Quill from overlapping with other elements
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .quill-editor-container {
+        position: relative;
+        margin-bottom: 150px; /* Extra space for the toolbar */
+      }
+      .quill-editor-container .ql-container {
+        height: 384px; /* Same as h-96 */
+      }
+      .quill-editor-container .ql-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: white;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   return (
     <div className="space-y-6 p-4 sm:p-6 max-w-4xl mx-auto relative">
       {/* Bildirim */}
@@ -202,7 +229,7 @@ export default function BlogEklePage() {
           <CardTitle>Yeni Blog Girişi</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-8">
             <div>
               <label htmlFor="title" className="block mb-2 font-medium">
                 Blog Başlığı
@@ -216,7 +243,7 @@ export default function BlogEklePage() {
               />
             </div>
 
-            <div>
+            <div className="quill-editor-container">
               <label className="block mb-2 font-medium">
                 İçerik
               </label>
@@ -228,11 +255,10 @@ export default function BlogEklePage() {
                 formats={formats}
                 theme="snow"
                 placeholder="Blog içeriğinizi buraya yazın..."
-                className="h-96"
               />
             </div>
 
-            <div>
+            <div className="mt-40">
               <label className="block mb-2 font-medium">
                 Kapak Fotoğrafı
               </label>
