@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), runtimeErrorOverlay(), themePlugin()],
   publicDir: path.resolve(__dirname, "public"),
@@ -23,11 +23,13 @@ export default defineConfig({
   },
   root: path.resolve(__dirname, "client"),
   build: {
-    outDir: path.resolve(__dirname, "dist/public"),
+    outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
-  },
-  server: {
-    // If you need specific server configurations
-    // But remove the 'static' property
+    // SSR için derlemeyi devre dışı bırak (Vercel/Netlify için)
+    ssr: false,
+    // Statik site dağıtımı için
+    target: 'esnext',
+    // Build sonrası dosyaları görüntüle (debug için)
+    reportCompressedSize: true,
   }
 });
