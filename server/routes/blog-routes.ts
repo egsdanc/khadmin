@@ -320,4 +320,52 @@ router.get('/getphoto/:imageName', async (req, res) => {
   });
 });
 
+// Blog silme endpoint'i
+router.delete('/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    
+    connection = await db.getConnection();
+
+    // Önce blog'un var olup olmadığını ve cover_image'ını kontrol et
+    const [blog] = await connection.execute(
+      'SELECT cover_image FROM blogs WHERE id = ?',
+      [id]
+    );
+
+    if (!(blog as any[]).length) {
+      return res.status(404).json({ message: 'Blog bulunamadı' });
+    }
+
+    // Cover image varsa dosyayı sil
+    const coverImagePath = (blog as any[])[0].cover_image;
+    if (coverImagePath) {
+      const filePath = path.join('public', coverImagePath);
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch (error) {
+        console.error('Dosya silme hatası:', error);
+      }
+    }
+
+    // Blog'u veritabanından sil
+    await connection.execute('DELETE FROM blogs WHERE id = ?', [id]);
+
+    res.status(200).json({ message: 'Blog başarıyla silindi' });
+  } catch (error) {
+    console.error('Blog silme hatası:', error);
+    res.status(500).json({ 
+      message: 'Blog silinirken bir hata oluştu',
+      error: (error as Error).message 
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
 export default router;

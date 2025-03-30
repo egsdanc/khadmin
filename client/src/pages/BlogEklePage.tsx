@@ -4,8 +4,18 @@ import 'react-quill/dist/quill.snow.css';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ImageIcon, UploadIcon, XIcon, CheckIcon, EditIcon, TrashIcon } from 'lucide-react';
+import { ImageIcon, UploadIcon, XIcon, CheckIcon, EditIcon, TrashIcon, SearchIcon, SortAscIcon, SortDescIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const modules = {
   toolbar: [
@@ -62,6 +72,10 @@ export default function BlogEklePage() {
     message: string;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [blogToDelete, setBlogToDelete] = useState<Blog | null>(null);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -256,6 +270,45 @@ export default function BlogEklePage() {
     };
   }, []);
 
+  const filteredAndSortedBlogs = blogs
+    .filter(blog => 
+      blog.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      const dateA = new Date(a.created_at);
+      const dateB = new Date(b.created_at);
+      return sortOrder === 'asc' 
+        ? dateA.getTime() - dateB.getTime()
+        : dateB.getTime() - dateA.getTime();
+    });
+
+  const handleDelete = async (blog: Blog) => {
+    setBlogToDelete(blog);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!blogToDelete) return;
+
+    try {
+      const response = await fetch(`/api/blogs/${blogToDelete.id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Blog silinirken bir hata oluştu');
+      }
+
+      showNotification('success', 'Blog başarıyla silindi');
+      fetchBlogs(); // Refresh the list
+    } catch (error) {
+      showNotification('error', 'Blog silinirken bir hata oluştu');
+    } finally {
+      setDeleteDialogOpen(false);
+      setBlogToDelete(null);
+    }
+  };
+
   return (
     <div className="space-y-6 p-4 sm:p-6 max-w-4xl mx-auto relative">
       {notification && (
@@ -392,42 +445,98 @@ export default function BlogEklePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {blogs.map((blog) => (
-                  <div
-                    key={blog.id}
-                    className="border rounded-lg p-4 flex items-start space-x-4"
+                {/* Search and Sort Controls */}
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="relative flex-1">
+                    <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      type="text"
+                      placeholder="Blog başlığına göre ara..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                    className="flex items-center"
                   >
-                    <div className="w-32 h-32 flex-shrink-0">
-                      <img
-                        src={blog.cover_image ? `/${blog.cover_image}` : '/placeholder.jpg'}
-                        alt={blog.title}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold">{blog.title}</h3>
-                      <p className="text-sm text-gray-500">
-                        {new Date(blog.created_at).toLocaleDateString('tr-TR')}
-                      </p>
-                      <div className="mt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(blog)}
-                          className="mr-2"
-                        >
-                          <EditIcon className="w-4 h-4 mr-1" />
-                          Düzenle
-                        </Button>
+                    {sortOrder === 'asc' ? (
+                      <SortAscIcon className="w-4 h-4 mr-2" />
+                    ) : (
+                      <SortDescIcon className="w-4 h-4 mr-2" />
+                    )}
+                    {sortOrder === 'asc' ? 'En Eski' : 'En Yeni'}
+                  </Button>
+                </div>
+
+                {/* Blog List */}
+                <div className="space-y-4">
+                  {filteredAndSortedBlogs.map((blog) => (
+                    <div
+                      key={blog.id}
+                      className="border rounded-lg p-4 flex items-start space-x-4"
+                    >
+                      <div className="w-32 h-32 flex-shrink-0">
+                        <img
+                          src={blog.cover_image ? `/${blog.cover_image}` : '/placeholder.jpg'}
+                          alt={blog.title}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold">{blog.title}</h3>
+                        <p className="text-sm text-gray-500">
+                          {new Date(blog.created_at).toLocaleDateString('tr-TR')}
+                        </p>
+                        <div className="mt-2 flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(blog)}
+                          >
+                            <EditIcon className="w-4 h-4 mr-1" />
+                            Düzenle
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(blog)}
+                          >
+                            <TrashIcon className="w-4 h-4 mr-1" />
+                            Sil
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Blogu Sil</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{blogToDelete?.title}" başlıklı blogu silmek istediğinize emin misiniz?
+              Bu işlem geri alınamaz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>
+              Sil
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
