@@ -165,20 +165,140 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
   }
 });
 
+// Blog listeleme endpoint'i
 router.get('/', async (req, res) => {
+  let connection;
   try {
-    res.status(200).json({
-      message: 'İstek başarılı',
-      blogs: [
-        { id: 1, title: 'İlk Blog', content: 'Bu bir dummy içeriktir.' },
-        { id: 2, title: 'İkinci Blog', content: 'Bu da bir başka dummy içeriktir.' }
-      ]
-    });
+    connection = await db.getConnection();
+    
+    const query = `
+      SELECT id, title, content, cover_image, created_at 
+      FROM blogs 
+      ORDER BY created_at DESC
+    `;
+    
+    const [rows] = await connection.execute(query);
+    
+    res.status(200).json(rows);
   } catch (error) {
+    console.error('Blog listeleme hatası:', error);
     res.status(500).json({ 
-      message: 'Sunucu hatası.', 
+      message: 'Bloglar listelenirken bir hata oluştu',
       error: (error as Error).message 
     });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+// Blog güncelleme endpoint'i
+router.put('/:id', upload.single('coverImage'), async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { title, content } = req.body;
+    
+    // Input validation
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: 'Blog başlığı gereklidir' });
+    }
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ message: 'Blog içeriği gereklidir' });
+    }
+
+    // Sanitize and validate title and content length
+    if (title.length > 255) {
+      return res.status(400).json({ message: 'Blog başlığı 255 karakterden uzun olamaz' });
+    }
+
+    if (content.length > 65535) {
+      return res.status(400).json({ message: 'Blog içeriği çok uzun' });
+    }
+
+    connection = await db.getConnection();
+
+    // Check if blog exists
+    const [existingBlog] = await connection.execute(
+      'SELECT cover_image FROM blogs WHERE id = ?',
+      [id]
+    );
+
+    if (!(existingBlog as any[]).length) {
+      return res.status(404).json({ message: 'Blog bulunamadı' });
+    }
+
+    let coverImagePath = (existingBlog as any[])[0].cover_image;
+
+    // If new image is uploaded
+    if (req.file) {
+      // Delete old image if exists
+      if (coverImagePath) {
+        const oldImagePath = path.join('public', coverImagePath);
+        try {
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+          }
+        } catch (error) {
+          console.error('Eski resim silme hatası:', error);
+        }
+      }
+
+      // Update with new image path
+      coverImagePath = path.join('uploads', 'blog-images', path.basename(req.file.path));
+    }
+
+    // Update blog
+    const updateQuery = `
+      UPDATE blogs 
+      SET title = ?, content = ?, cover_image = ?
+      WHERE id = ?
+    `;
+
+    await connection.execute(updateQuery, [
+      title,
+      content,
+      coverImagePath,
+      id
+    ]);
+
+    res.status(200).json({
+      message: 'Blog başarıyla güncellendi',
+      coverImageUrl: coverImagePath ? `/${coverImagePath}` : null
+    });
+  } catch (error) {
+    console.error('Blog güncelleme hatası:', error);
+    
+    if (error instanceof multer.MulterError) {
+      return res.status(400).json({ 
+        message: error.message || 'Dosya yükleme hatası' 
+      });
+    }
+
+    if ((error as any).code === 'ER_DATA_TOO_LONG') {
+      return res.status(400).json({ 
+        message: 'Girilen veriler çok uzun' 
+      });
+    }
+
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Dosya silme hatası:', unlinkError);
+      }
+    }
+
+    res.status(500).json({ 
+      message: 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.',
+      error: (error as Error).message 
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 });
 
@@ -199,7 +319,5 @@ router.get('/getphoto/:imageName', async (req, res) => {
     res.sendFile(filePath);
   });
 });
-
-
 
 export default router;
