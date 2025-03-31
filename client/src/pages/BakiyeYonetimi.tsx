@@ -237,6 +237,46 @@ const OnlineOdeme = () => {
   const formRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
+  // Add firma query
+  const { data: firmaResponse } = useQuery<{
+    success: boolean;
+    data: Array<{ id: number; name: string }>;
+  }>({
+    queryKey: ["/api/companies"],
+  });
+
+  // Add bayiler query
+  const { data: bayilerResponse, isLoading: bayiLoading } = useQuery<{
+    success: boolean;
+    data: Array<{ id: number; ad: string; aktif: boolean; firma: number }>;
+  }>({
+    queryKey: ["/api/bayiler", selectedFirma],
+    queryFn: async () => {
+      if (!selectedFirma) {
+        return { success: true, data: [] };
+      }
+
+      const params = new URLSearchParams({
+        firma_id: selectedFirma,
+        limit: "1000",
+      });
+
+      const response = await fetch(`/api/bayiler?${params}`);
+      if (!response.ok) {
+        throw new Error("Bayi listesi alınamadı");
+      }
+      return response.json();
+    },
+    enabled: selectedFirma !== "",
+  });
+
+  // Add filteredBayiler memo
+  const filteredBayiler = useMemo(() => {
+    const bayiler = bayilerResponse?.data || [];
+    if (!selectedFirma) return [];
+    return bayiler.filter(bayi => bayi.firma === parseInt(selectedFirma));
+  }, [bayilerResponse?.data, selectedFirma]);
+
   const cleanupIyzicoElements = () => {
     // Clear the form container
     if (formRef.current) {
