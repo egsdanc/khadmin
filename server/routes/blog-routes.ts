@@ -5,7 +5,6 @@ import fs from 'fs';
 import crypto from 'crypto';
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
 
 // Load environment variables
 dotenv.config();
@@ -27,11 +26,8 @@ const db = mysql.createPool(dbConfig);
 // Depolama konfigürasyonu
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // const uploadPath = path.join('public', 'uploads', 'blog-images');
-        const __filename = fileURLToPath(import.meta.url);
-        const __dirname = path.dirname(__filename);
-      
-    const uploadPath = path.resolve(__dirname, 'public', 'uploads', 'blog-images');
+    const uploadPath = path.join('public', 'uploads', 'blog-images');
+    
     // Klasör yoksa oluştur
     if (!fs.existsSync(uploadPath)){
       fs.mkdirSync(uploadPath, { recursive: true });
@@ -98,7 +94,7 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
       return res.status(400).json({ message: 'Blog içeriği çok uzun' });
     }
 
-    const coverImagePath = `/uploads/blog-images/${path.basename(req.file.path)}`;
+    const coverImagePath = path.join('uploads', 'blog-images', path.basename(req.file.path));
 
     // Open a new connection to the database
     connection = await db.getConnection();
