@@ -17,9 +17,7 @@ app.use(cors({
     "https://dynobiloto.repl.co",
     "https://8080-dynobiloto.repl.co",
     "https://sandbox-api.iyzipay.com",
-    "https://sandbox-merchantgw.iyzipay.com",
-    "https://khadmin-6lmu.onrender.com",
-    "https://khweb.vercel.app"
+    "https://sandbox-merchantgw.iyzipay.com"
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

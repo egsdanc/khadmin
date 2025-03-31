@@ -76,9 +76,6 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-      app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
-          app.use(express.static(path.join(__dirname, 'public')));
-  //bu ikisini kaldır yukarıdkai
   const distPath = path.resolve(__dirname, "public");
 
   if (!fs.existsSync(distPath)) {
