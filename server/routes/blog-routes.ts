@@ -23,17 +23,30 @@ console.log("Database config loaded", dbConfig);
 // Create a database connection pool
 const db = mysql.createPool(dbConfig);
 
+// Dosya yolları için ROOT_DIR (build sonrası çalışacak şekilde)
+const ROOT_DIR = process.env.NODE_ENV === 'production' 
+  ? path.resolve(process.cwd()) 
+  : path.resolve(__dirname, '..');
+
+// Upload dizini
+const UPLOAD_DIR = path.join(ROOT_DIR, 'uploads', 'blog-images');
+
+// Dizin oluşturma fonksiyonu
+const ensureDirectoryExists = (dirPath: string) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+    console.log(`Dizin oluşturuldu: ${dirPath}`);
+  }
+};
+
+// Başlangıçta upload dizininin var olduğundan emin ol
+ensureDirectoryExists(UPLOAD_DIR);
+
 // Depolama konfigürasyonu
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join('public', 'uploads', 'blog-images');
-    
-    // Klasör yoksa oluştur
-    if (!fs.existsSync(uploadPath)){
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    
-    cb(null, uploadPath);
+    ensureDirectoryExists(UPLOAD_DIR);
+    cb(null, UPLOAD_DIR);
   },
   filename: (req, file, cb) => {
     // Benzersiz dosya adı oluştur
@@ -65,6 +78,12 @@ const upload = multer({
 
 const router = Router();
 
+// Web'den erişilebilir yolu oluştur (URL için)
+const getWebPath = (filePath: string): string => {
+  // Tam dosya yolundan URL'ye dönüştürme
+  return '/uploads/blog-images/' + path.basename(filePath);
+};
+
 // Blog ekleme endpoint'i
 router.post('/', upload.single('coverImage'), async (req, res) => {
   let connection;
@@ -95,12 +114,12 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
     }
 
     // Dosya tam yolunu oluştur ve konsola yazdır
-    const absoluteFilePath = path.resolve(req.file.path);
+    const absoluteFilePath = req.file.path;
     console.log("Yüklenen dosyanın tam yolu:", absoluteFilePath);
     
     // Dosyanın web'den erişilebilir yolu
-    const coverImagePath = path.join('uploads', 'blog-images', path.basename(req.file.path));
-    console.log("Dosyanın web'den erişilebilir yolu:", `/${coverImagePath}`);
+    const coverImagePath = getWebPath(req.file.path);
+    console.log("Dosyanın web'den erişilebilir yolu:", coverImagePath);
 
     // Open a new connection to the database
     connection = await db.getConnection();
@@ -132,7 +151,7 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
     res.status(201).json({
       message: 'Blog başarıyla eklendi',
       blogId: (result as any).insertId,
-      coverImageUrl: `/${coverImagePath}`,
+      coverImageUrl: coverImagePath,
       absoluteFilePath: absoluteFilePath  // Tam yolu yanıtta da döndür
     });
   } catch (error) {
@@ -189,8 +208,7 @@ router.get('/', async (req, res) => {
     // Tam yolları konsola yazdır
     (rows as any[]).forEach(blog => {
       if (blog.cover_image) {
-        const absolutePath = path.resolve('public', blog.cover_image);
-        console.log(`Blog ID ${blog.id} için resim tam yolu:`, absolutePath);
+        console.log(`Blog ID ${blog.id} için resim yolu:`, blog.cover_image);
       }
     });
     
@@ -250,13 +268,16 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
     // If new image is uploaded
     if (req.file) {
       // Yeni yüklenen dosyanın tam yolunu konsola yazdır
-      const absoluteFilePath = path.resolve(req.file.path);
+      const absoluteFilePath = req.file.path;
       console.log(`Blog ID ${id} için yeni yüklenen dosyanın tam yolu:`, absoluteFilePath);
       
       // Delete old image if exists
       if (coverImagePath) {
-        const oldImagePath = path.join('public', coverImagePath);
         try {
+          // URL'den dosya yoluna dönüştürme
+          const oldBaseName = path.basename(coverImagePath);
+          const oldImagePath = path.join(UPLOAD_DIR, oldBaseName);
+          
           if (fs.existsSync(oldImagePath)) {
             console.log(`Eski resim siliniyor: ${oldImagePath}`);
             fs.unlinkSync(oldImagePath);
@@ -267,7 +288,7 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
       }
 
       // Update with new image path
-      coverImagePath = path.join('uploads', 'blog-images', path.basename(req.file.path));
+      coverImagePath = getWebPath(req.file.path);
       console.log(`Veritabanına kaydedilecek yeni resim yolu: ${coverImagePath}`);
     }
 
@@ -287,8 +308,8 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
 
     res.status(200).json({
       message: 'Blog başarıyla güncellendi',
-      coverImageUrl: coverImagePath ? `/${coverImagePath}` : null,
-      absoluteFilePath: req.file ? path.resolve(req.file.path) : null
+      coverImageUrl: coverImagePath,
+      absoluteFilePath: req.file ? req.file.path : null
     });
   } catch (error) {
     console.error('Blog güncelleme hatası:', error);
@@ -328,8 +349,8 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
 router.get('/getphoto/:imageName', async (req, res) => {
   const { imageName } = req.params;
 
-  // Fotoğraf yolunu oluştur (mutlak yol)
-  const filePath = path.resolve('public', 'uploads', 'blog-images', imageName);
+  // Fotoğraf yolunu oluştur
+  const filePath = path.join(UPLOAD_DIR, imageName);
   console.log(`Erişilmeye çalışılan resmin tam yolu: ${filePath}`);
   
   // Fotoğraf dosyasının var olup olmadığını kontrol et
@@ -365,14 +386,14 @@ router.delete('/:id', async (req, res) => {
     // Cover image varsa dosyayı sil
     const coverImagePath = (blog as any[])[0].cover_image;
     if (coverImagePath) {
-      const filePath = path.join('public', coverImagePath);
-      const absoluteFilePath = path.resolve('public', coverImagePath);
-      console.log(`Silinecek resmin tam yolu: ${absoluteFilePath}`);
-      
       try {
+        // URL'den dosya yoluna dönüştürme
+        const imageBaseName = path.basename(coverImagePath);
+        const filePath = path.join(UPLOAD_DIR, imageBaseName);
+        
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
-          console.log(`Resim başarıyla silindi: ${absoluteFilePath}`);
+          console.log(`Resim başarıyla silindi: ${filePath}`);
         }
       } catch (error) {
         console.error('Dosya silme hatası:', error);
