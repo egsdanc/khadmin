@@ -30,10 +30,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
-    app.use(express.static(path.join(__dirname, 'public')));
+  
+    // app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+    // app.use(express.static(path.join(__dirname, 'public')));
 
 
+
+    app.use(express.static(path.resolve(__dirname, 'dist/public')));
+    app.use('/uploads', express.static(path.resolve(__dirname, 'public/uploads')));
 
 // Setup authentication
 setupAuth(app);
