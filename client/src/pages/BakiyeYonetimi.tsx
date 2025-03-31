@@ -307,6 +307,7 @@ const OnlineOdeme = () => {
 
   const paymentMutation = useMutation({
     mutationFn: async () => {
+      console.log("aaaaaa",selectedBayi)
       const response = await fetch("/api/payment/bayi/create", {
         method: "POST",
         headers: {
@@ -314,7 +315,7 @@ const OnlineOdeme = () => {
         },
         body: JSON.stringify({
           amount: parseFloat(amount),
-          bayi_id: user?.role === "Super Admin" ? parseInt(selectedBayi) : user?.bayi_id,
+          bayi_id: user?.role === "Super Admin" ? parseInt(selectedBayi) :  user?.role === "Admin" ? parseInt(selectedBayi) : user?.bayi_id,
         }),
         credentials: 'include'
       });
@@ -363,18 +364,38 @@ const OnlineOdeme = () => {
     },
   });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || (user?.role === "Super Admin" || user?.role === "Admin" && (!selectedFirma || !selectedBayi)) || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+    if (!user) {
       toast({
         variant: "destructive",
         title: "Hata",
-        description: "Lütfen tüm alanları doldurunuz ve geçerli bir tutar giriniz",
+        description: "Kullanıcı bilgisi bulunamadı",
       });
       return;
     }
-    cleanupIyzicoElements()
 
+    // Süper Admin veya Admin için firma ve bayi kontrolü
+    if ((user.role === "Super Admin" || user.role === "Admin") && (!selectedFirma || !selectedBayi)) {
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Lütfen firma ve bayi seçiniz",
+      });
+      return;
+    }
+
+    // Tutar kontrolü
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Lütfen geçerli bir tutar giriniz",
+      });
+      return;
+    }
+
+    cleanupIyzicoElements();
     setLoading(true);
     try {
       await paymentMutation.mutateAsync();
@@ -391,7 +412,7 @@ const OnlineOdeme = () => {
       </CardHeader>
       <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {user?.role === "Super Admin" && (
+            {(user?.role === "Super Admin" || user?.role === "Admin") && (
               <>
                 <div className="space-y-2">
                   <Label>Firma</Label>

@@ -10,7 +10,7 @@ router.post("/bayi/create", requireAuth, async (req, res) => {
     const { amount, bayi_id } = req.body;
 
     // Super Admin için gönderilen bayi_id'yi, normal bayi için kendi ID'sini kullan
-    const targetBayiId = req.user?.role === "Super Admin" ? bayi_id : req.user?.bayi_id;
+    const targetBayiId = req.user?.role === "Super Admin" ? bayi_id : req.user?.role === "Admin" ? bayi_id : req.user?.bayi_id;
 
     if (!targetBayiId) {
       return res.status(401).json({ 

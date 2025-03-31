@@ -77,7 +77,9 @@ export default function AyarlarPage() {
       <Tabs defaultValue="hesap" className="space-y-6">
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="hesap" className="flex-1 sm:flex-none">Hesap Ayarları</TabsTrigger>
-          <TabsTrigger value="lokasyon" className="flex-1 sm:flex-none">Lokasyon Yönetimi</TabsTrigger>
+          {(user?.role ===  "Super Admin" || user?.role === "Admin") && (
+                    <TabsTrigger value="lokasyon" className="flex-1 sm:flex-none">Lokasyon Yönetimi</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="hesap" className="space-y-6">
