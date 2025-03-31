@@ -17,7 +17,9 @@ app.use(cors({
     "https://dynobiloto.repl.co",
     "https://8080-dynobiloto.repl.co",
     "https://sandbox-api.iyzipay.com",
-    "https://sandbox-merchantgw.iyzipay.com"
+    "https://sandbox-merchantgw.iyzipay.com",
+    "https://khadmin-6lmu.onrender.com",
+    "https://khweb.vercel.app"
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -30,9 +32,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
- //  app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
- app.use('/uploads', express.static('uploads'));  
- app.use(express.static(path.join(__dirname, 'public')));
+    app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+    app.use(express.static(path.join(__dirname, 'public')));
 
 
 
