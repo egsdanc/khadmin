@@ -1,5 +1,7 @@
 import { db } from "./database-service";
 import type { PoolConnection } from "mysql2/promise";
+import { bayiler } from "@db/schema";
+import { eq } from "drizzle-orm";
 
 interface BakiyeHareketi {
   id: number;
@@ -294,6 +296,23 @@ export class BakiyeService {
       if (connection) {
         connection.release();
       }
+    }
+  }
+
+  async getUserBalance(userId: number) {
+    try {
+      const result = await db
+        .select({
+          bakiye: bayiler.bakiye
+        })
+        .from(bayiler)
+        .where(eq(bayiler.id, userId))
+        .limit(1);
+
+      return result[0]?.bakiye || 0;
+    } catch (error) {
+      console.error('Error fetching user balance:', error);
+      throw error;
     }
   }
 }

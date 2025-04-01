@@ -353,6 +353,25 @@ export class BayiService {
       }
     }
   }
+
+  async getBayiNameById(id: number) {
+    let connection: PoolConnection | null = null;
+    try {
+      connection = await db.getConnection();
+      const [rows]: any = await connection.execute(
+        'SELECT ad FROM bayiler WHERE id = ? AND deleted_at IS NULL',
+        [id]
+      );
+      return rows[0]?.ad || null;
+    } catch (error) {
+      console.error('Bayi adı getirme hatası:', error);
+      throw error;
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  }
 }
 
 export const bayiService = new BayiService();

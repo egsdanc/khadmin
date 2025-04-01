@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "../services/database-service";
 import { z } from "zod";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
+import { getFirmaNameById } from '../services/firma-service';
 
 const router = Router();
 
@@ -340,6 +341,17 @@ router.get("/distribution", async (_req, res) => {
     if (connection) {
       connection.release();
     }
+  }
+});
+
+router.get('/:id/name', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const name = await getFirmaNameById(id);
+    res.json({ name });
+  } catch (error) {
+    console.error('Error fetching company name:', error);
+    res.status(500).json({ error: 'Failed to fetch company name' });
   }
 });
 
