@@ -215,4 +215,69 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Rol izinlerini kontrol et
+router.get("/rolekontrol", async (req, res) => {
+  let connection;
+  try {
+    const { role } = req.query;
+    console.log("[Role Routes] GET /api/roles/rolekontrol isteği alındı:", { role });
+
+    if (!role) {
+      return res.status(400).json({
+        success: false,
+        message: "Rol parametresi zorunludur"
+      });
+    }
+
+    connection = await db.getConnection();
+
+    const [rows] = await connection.query(
+      `SELECT permissions FROM roles WHERE name = ?`,
+      [role]
+    );
+
+    console.log("[Role Routes] Rol kontrolü sonucu:", rows);
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Rol bulunamadı"
+      });
+    }
+
+    // Parse the permissions JSON string
+    let permissions;
+    try {
+      const row = rows[0] as { permissions: string };
+      permissions = typeof row.permissions === 'string' 
+        ? JSON.parse(row.permissions)
+        : row.permissions;
+    } catch (parseError) {
+      console.error("[Role Routes] Permissions parse hatası:", parseError);
+      return res.status(500).json({
+        success: false,
+        message: "Permissions verisi işlenirken hata oluştu"
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: permissions
+    });
+
+  } catch (error) {
+    console.error("[Role Routes] Rol kontrolü hatası:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Rol kontrolü yapılırken bir hata oluştu",
+      error: error instanceof Error ? error.message : "Bilinmeyen hata"
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+      console.log("[Role Routes] Database bağlantısı kapatıldı");
+    }
+  }
+});
+
 export default router;

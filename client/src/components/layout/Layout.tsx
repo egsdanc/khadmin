@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,112 +26,179 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+interface Permissions {
+  [key: string]: {
+    view: boolean;
+    create?: boolean;
+    edit?: boolean;
+    delete?: boolean;
+    load?: boolean;
+    query?: boolean;
+  };
+}
+
 export function Layout({ children }: LayoutProps) {
   const { logout } = useAuth();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
+  const [permissions, setPermissions] = useState<Permissions | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const isAdmin = user?.role === "Admin" || user?.role === "Super Admin";
   const isSuperAdmin = user?.role === "Super Admin";
   const isBayi = user?.role === "Bayi";
 
-  // Define all menu items with their visibility rules
+  // Fetch permissions based on user role
+  useEffect(() => {
+    if (user?.role) {
+      fetchPermissions(user.role);
+    }
+  }, [user?.role]);
+
+  const fetchPermissions = async (role: string) => {
+    try {
+      const response = await fetch(`/api/roles/rolekontrol?role=${role}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setPermissions(data.data);
+      } else {
+        console.error("Rol izinleri alınamadı:", data.message);
+      }
+    } catch (error) {
+      console.error("Rol izinleri alınırken hata oluştu:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Define all menu items with their permission keys
   const allMenuItems = [
     { 
       href: "/panel", 
       label: "Panel", 
       icon: PanelLeft,
-      visible: true // visible to all users
+      permissionKey: "Panel",
+      visible: permissions ? !!permissions["Panel"]?.view : isAdmin || isBayi
     },
     { 
       href: "/firmalar", 
       label: "Firmalar", 
       icon: Building2,
-      visible: isAdmin // visible to all users
+      permissionKey: "Firmalar",
+      visible: permissions ? !!permissions["Firmalar"]?.view : isAdmin
     },
     { 
       href: "/bayiler", 
       label: "Bayiler", 
       icon: Store,
-      visible: isAdmin // visible to all users
+      permissionKey: "Bayiler",
+      visible: permissions ? !!permissions["Bayiler"]?.view : isAdmin
     },
     { 
       href: "/bakiye", 
       label: "Bakiye Yönetimi", 
       icon: Wallet,
-      visible: true // visible to all users
+      permissionKey: "Bakiye-Yonetimi",
+      visible: permissions ? !!permissions["Bakiye-Yonetimi"]?.view : true
     },
     { 
       href: "/komisyon", 
       label: "Komisyon Yönetimi", 
       icon: Percent,
-      visible: isAdmin // visible to all users
+      permissionKey: "Komisyon-Yonetimi",
+      visible: permissions ? !!permissions["Komisyon-Yonetimi"]?.view : isAdmin
     },
     { 
       href: "/panel-users", 
       label: "Panel Kullanıcıları", 
       icon: Users,
-      visible: isAdmin // only visible to Admin and Super Admin
+      permissionKey: "Kullanicilar",
+      visible: permissions ? !!permissions["Kullanicilar"]?.view : isAdmin
     },
     { 
       href: "/kullanicilar", 
       label: "Program Kullanıcıları", 
       icon: Users,
-      visible: isAdmin // only visible to Admin and Super Admin
+      permissionKey: "Program-Kullanicilari",
+      visible: permissions ? !!permissions["Program-Kullanicilari"]?.view : isAdmin
     },
     { 
       href: "/kilometre", 
       label: "Kilometre Hacker", 
       icon: Car,
-      visible: true // visible to all users
+      permissionKey: "Kilometre-Hacker",
+      visible: permissions ? !!permissions["Kilometre-Hacker"]?.view : true
     },
     { 
       href: "/vinreader", 
       label: "VIN Hacker", 
       icon: Car,
-      visible: true // visible to all users
+      permissionKey: "VIN-Hacker",
+      visible: permissions ? !!permissions["VIN-Hacker"]?.view : true
     },
     { 
       href: "/cihaz-satislari", 
       label: "Cihaz Satışları", 
       icon: ShoppingBag,
-      visible: isAdmin // visible to all users
+      permissionKey: "Cihaz-Satislari",
+      visible: permissions ? !!permissions["Cihaz-Satislari"]?.view : isAdmin
     },
     { 
       href: "/cihaz-satin-al", 
       label: "Cihaz Satın Al", 
       icon: PackageSearch,
-      visible: isAdmin // visible to all users
+      permissionKey: "Cihaz-Satin-Al",
+      visible: permissions ? !!permissions["Cihaz-Satin-Al"]?.view : isAdmin
     },
     { 
       href: "/roller", 
       label: "Roller", 
       icon: FileSpreadsheet,
-      visible: isAdmin // visible to all users
+      permissionKey: "Roller",
+      visible: permissions ? !!permissions["Roller"]?.view : isAdmin
     },
     { 
       href: "/raporlar", 
       label: "Raporlar", 
       icon: FileBarChart,
-      visible: true // visible to all users
+      permissionKey: "Raporlar",
+      visible: permissions ? !!permissions["Raporlar"]?.view : true
     },
     { 
       href: "/blog-ekle", 
       label: "Blog", 
       icon: PanelLeft,
-      visible: isAdmin // visible to all users
+      permissionKey: "Blog",
+      visible: isAdmin // Blog might not have a permission entry, default to isAdmin
     },
     { 
       href: "/ayarlar", 
       label: "Ayarlar", 
       icon: Settings,
-      visible: true // visible to all users
+      permissionKey: "Ayarlar",
+      visible: permissions ? !!permissions["Ayarlar"]?.view : true
     },
   ];
 
-  // Filter menu items based on visibility
-  const menuItems = allMenuItems.filter(item => item.visible);
+  // Filter menu items based on permissions
+  const menuItems = allMenuItems.filter(item => {
+    if (loading) return false;
+    
+    if (isSuperAdmin) return true; // Super Admin sees everything
+    
+    if (permissions && item.permissionKey) {
+      const permissionEntry = permissions[item.permissionKey];
+      return permissionEntry && permissionEntry.view === true;
+    }
+    
+    return item.visible;
+  });
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Yükleniyor...</div>;
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -171,16 +238,7 @@ export function Layout({ children }: LayoutProps) {
                     "w-full justify-start gap-3",
                     isActive && "bg-accent text-accent-foreground font-medium"
                   )}
-                  onClick={() => 
-                  {
-                    if(item.label=== "Bakiye Yönetimi" &&  isBayi )
-                    {
-              //        window.location.href = "/bakiye";
-                    }
-                    setIsMobileMenuOpen(false)
-                  }
-                  
-                  }
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
