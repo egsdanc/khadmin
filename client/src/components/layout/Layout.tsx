@@ -45,7 +45,9 @@ export function Layout({ children }: LayoutProps) {
   const [permissions, setPermissions] = useState<Permissions | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isAdmin = user?.role === "Admin" || user?.role === "Super Admin";
+ // const isAdmin = user?.role === "Admin" || user?.role === "Super Admin";
+   const isAdmin =  user?.role === "Super Admin";
+
   const isSuperAdmin = user?.role === "Super Admin";
   const isBayi = user?.role === "Bayi";
 
@@ -114,8 +116,8 @@ export function Layout({ children }: LayoutProps) {
       href: "/panel-users", 
       label: "Panel Kullanıcıları", 
       icon: Users,
-      permissionKey: "Kullanicilar",
-      visible: permissions ? !!permissions["Kullanicilar"]?.view : isAdmin
+      permissionKey: "Panel-Kullanicilari",
+      visible: permissions ? !!permissions["Panel-Kullanicilari"]?.view : isAdmin
     },
     { 
       href: "/kullanicilar", 
@@ -213,8 +215,8 @@ export function Layout({ children }: LayoutProps) {
       >
         {/* Sidebar Header */}
         <div className="flex h-14 items-center justify-between border-b px-4">
-          <span className="text-lg font-semibold">Kilometre Hacker</span>
-          <Button
+        <span className="text-sm sm:text-lg font-semibold pl-12 sm:pl-0">Kilometre Hacker</span>
+        <Button
             variant="ghost"
             size="icon"
             className="lg:hidden"

@@ -280,4 +280,157 @@ router.get("/rolekontrol", async (req, res) => {
   }
 });
 
+// Rol izinlerini güncelle
+router.post("/update-permissions", async (req, res) => {
+  const { role, permissions } = req.body;
+  console.error("Received request bodyyyyy:", req.body); // Add this log
+
+  if (!role || !permissions) {
+    return res.status(400).json({
+      success: false,
+      message: "Rol ve izinler gerekli",
+    });
+  }
+
+  try {
+    const connection = await db.getConnection();
+    try {
+      // Önce rolün var olup olmadığını kontrol et
+      const [existingRoles] = await connection.query(
+        "SELECT id FROM roles WHERE name = ?",
+        [role]
+      );
+      console.log("iiiii",permissions)
+
+      if (!Array.isArray(existingRoles) || existingRoles.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Rol bulunamadı",
+        });
+      }
+
+      // İzinleri JSON string'e çevir
+      const permissionsJson = JSON.stringify(permissions);
+
+      // İzinleri güncelle
+      await connection.query(
+        "UPDATE roles SET permissions = ? WHERE name = ?",
+        [permissionsJson, role]
+      );
+       console.log("oooo",permissionsJson)
+      return res.json({
+        success: true,
+        message: "Rol izinleri başarıyla güncellendi",
+      });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error("Database error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Veritabanı hatası",
+      error: error instanceof Error ? error.message : "Bilinmeyen hata",
+    });
+  }
+});
+
+// Rol izinlerini listele
+router.get("/list-permissions", async (req, res) => {
+  const { role } = req.query;
+  console.log("[Role Routes] GET /api/roles/list-permissions isteği alındı:", { role });
+
+  if (!role) {
+    return res.status(400).json({
+      success: false,
+      message: "Rol parametresi gerekli",
+    });
+  }
+
+  let connection;
+  try {
+    connection = await db.getConnection();
+    console.log("[Role Routes] Database bağlantısı başarılı");
+
+    const [rows] = await connection.query(
+      "SELECT permissions FROM roles WHERE name = ?",
+      [role]
+    );
+
+    console.log("[Role Routes] Veritabanı sonucu:", JSON.stringify(rows, null, 2));
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Rol bulunamadı",
+      });
+    }
+
+    // Type assertion ile permissions'ı al
+    const row = rows[0] as { permissions: string | object };
+    console.log("[Role Routes] Ham permissions verisi:", JSON.stringify(row.permissions, null, 2));
+
+    const permissions = row.permissions;
+    let parsedPermissions;
+
+    try {
+      // Eğer permissions string ise parse et, değilse direkt kullan
+      if (typeof permissions === 'string') {
+        try {
+          parsedPermissions = JSON.parse(permissions);
+        } catch (parseError) {
+          console.error("[Role Routes] JSON parse hatası:", parseError);
+          // Eğer JSON parse başarısız olursa, string'i direkt olarak kullan
+          parsedPermissions = permissions;
+        }
+      } else {
+        parsedPermissions = permissions;
+      }
+
+      console.log("[Role Routes] Parse edilmiş permissions:", JSON.stringify(parsedPermissions, null, 2));
+
+      // Eğer parsedPermissions null veya undefined ise boş obje döndür
+      if (!parsedPermissions) {
+        parsedPermissions = {};
+      }
+
+      // Eğer parsedPermissions string ise, tekrar parse etmeyi dene
+      if (typeof parsedPermissions === 'string') {
+        try {
+          parsedPermissions = JSON.parse(parsedPermissions);
+        } catch (parseError) {
+          console.error("[Role Routes] İkinci JSON parse hatası:", parseError);
+        }
+      }
+
+    } catch (parseError) {
+      console.error("[Role Routes] Permissions parse hatası:", parseError);
+      return res.status(500).json({
+        success: false,
+        message: "İzinler parse edilemedi",
+        error: parseError instanceof Error ? parseError.message : "Bilinmeyen hata",
+        rawData: permissions,
+        rawDataType: typeof permissions
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: parsedPermissions,
+    });
+  } catch (error) {
+    console.error("[Role Routes] Database hatası:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Veritabanı hatası",
+      error: error instanceof Error ? error.message : "Bilinmeyen hata",
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+      console.log("[Role Routes] Database bağlantısı kapatıldı");
+    }
+  }
+});
+
 export default router;

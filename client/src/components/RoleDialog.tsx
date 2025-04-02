@@ -1,16 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Check, X } from "lucide-react";
+import { api } from "@/lib/api";
 
 interface Role {
   id: number;
@@ -24,82 +26,78 @@ interface RoleDialogProps {
   onClose?: () => void;
 }
 
-// İzin şemasını daha esnek hale getiriyoruz
+// İzin şeması
 const permissionSchema = z.object({
-  panel: z.object({
-    view: z.boolean().optional().default(false),
-  }).optional().default({}),
-  companies: z.object({
-    view: z.boolean().optional().default(false),
-    create: z.boolean().optional().default(false),
-    edit: z.boolean().optional().default(false),
-    delete: z.boolean().optional().default(false),
-  }).optional().default({}),
-  dealers: z.object({
-    view: z.boolean().optional().default(false),
-    create: z.boolean().optional().default(false),
-    edit: z.boolean().optional().default(false),
-    delete: z.boolean().optional().default(false),
-  }).optional().default({}),
-  users: z.object({
-    view: z.boolean().optional().default(false),
-    create: z.boolean().optional().default(false),
-    edit: z.boolean().optional().default(false),
-    delete: z.boolean().optional().default(false),
-  }).optional().default({}),
-  programUsers: z.object({
-    view: z.boolean().optional().default(false),
-    create: z.boolean().optional().default(false),
-    edit: z.boolean().optional().default(false),
-    delete: z.boolean().optional().default(false),
-  }).optional().default({}),
-  balance: z.object({
-    view: z.boolean().optional().default(false),
-    load: z.boolean().optional().default(false),
-  }).optional().default({}),
-  kilometreHacker: z.object({
-    view: z.boolean().optional().default(false),
-    create: z.boolean().optional().default(false),
-    query: z.boolean().optional().default(false),
-  }).optional().default({}),
-  vinHacker: z.object({
-    view: z.boolean().optional().default(false),
-    create: z.boolean().optional().default(false),
-    query: z.boolean().optional().default(false),
-  }).optional().default({}),
-  komisyonYonetimi: z.object({
-    view: z.boolean().optional().default(false),
-    edit: z.boolean().optional().default(false),
-  }).optional().default({}),
-  ayarlar: z.object({
-    view: z.boolean().optional().default(false),
-    edit: z.boolean().optional().default(false),
-  }).optional().default({}),
-  cihazSatislari: z.object({
-    view: z.boolean().optional().default(false),
-    create: z.boolean().optional().default(false),
-    edit: z.boolean().optional().default(false),
-  }).optional().default({}),
-  cihazSatinAl: z.object({
-    view: z.boolean().optional().default(false),
-    create: z.boolean().optional().default(false),
-  }).optional().default({}),
-  reports: z.object({
-    view: z.boolean().optional().default(false),
-  }).optional().default({}),
-  roles: z.object({
-    view: z.boolean().optional().default(false),
-    create: z.boolean().optional().default(false),
-    edit: z.boolean().optional().default(false),
-    delete: z.boolean().optional().default(false),
-  }).optional().default({}),
+  "Panel": z.object({
+    view: z.boolean(),
+  }),
+  "Firmalar": z.object({
+    view: z.boolean(),
+    create: z.boolean(),
+    edit: z.boolean(),
+    delete: z.boolean(),
+  }),
+  "Bayiler": z.object({
+    view: z.boolean(),
+    create: z.boolean(),
+    edit: z.boolean(),
+    delete: z.boolean(),
+  }),
+  "Bakiye-Yonetimi": z.object({
+    view: z.boolean(),
+    load: z.boolean(),
+  }),
+  "Komisyon-Yonetimi": z.object({
+    view: z.boolean(),
+    edit: z.boolean(),
+  }),
+  "Panel-Kullanicilari": z.object({
+    view: z.boolean(),
+    create: z.boolean(),
+    edit: z.boolean(),
+    delete: z.boolean(),
+  }),
+  "Program-Kullanicilari": z.object({
+    view: z.boolean(),
+    create: z.boolean(),
+    edit: z.boolean(),
+    delete: z.boolean(),
+  }),
+  "Kilometre-Hacker": z.object({
+    view: z.boolean(),
+    create: z.boolean(),
+    query: z.boolean(),
+  }),
+  "VIN-Hacker": z.object({
+    view: z.boolean(),
+    create: z.boolean(),
+    query: z.boolean(),
+  }),
+  "Cihaz-Satislari": z.object({
+    view: z.boolean(),
+    create: z.boolean(),
+    edit: z.boolean(),
+  }),
+  "Cihaz-Satin-Al": z.object({
+    view: z.boolean(),
+    create: z.boolean(),
+  }),
+  "Roller": z.object({
+    view: z.boolean(),
+    create: z.boolean(),
+    edit: z.boolean(),
+    delete: z.boolean(),
+  }),
+  "Raporlar": z.object({
+    view: z.boolean(),
+  }),
+  "Ayarlar": z.object({
+    view: z.boolean(),
+    edit: z.boolean(),
+  }),
 });
 
 const roleFormSchema = z.object({
-  name: z.string({
-    required_error: "Rol adı zorunludur",
-  }),
-  description: z.string().optional(),
   permissions: permissionSchema,
 });
 
@@ -110,56 +108,200 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const defaultPermissions = {
-    panel: { view: false },
-    companies: { view: false, create: false, edit: false, delete: false },
-    dealers: { view: false, create: false, edit: false, delete: false },
-    users: { view: false, create: false, edit: false, delete: false },
-    programUsers: { view: false, create: false, edit: false, delete: false },
-    balance: { view: false, load: false },
-    kilometreHacker: { view: false, create: false, query: false },
-    vinHacker: { view: false, create: false, query: false },
-    komisyonYonetimi: { view: false, edit: false },
-    ayarlar: { view: false, edit: false },
-    cihazSatislari: { view: false, create: false, edit: false },
-    cihazSatinAl: { view: false, create: false },
-    reports: { view: false },
-    roles: { view: false, create: false, edit: false, delete: false },
-  };
-
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(roleFormSchema),
     defaultValues: {
-      name: role?.name || "",
-      description: role?.description || "",
-      permissions: role ? JSON.parse(role.permissions) : defaultPermissions,
+      permissions: {
+        "Panel": { view: false },
+        "Firmalar": {
+          view: false,
+          create: false,
+          edit: false,
+          delete: false,
+        },
+        "Bayiler": {
+          view: false,
+          create: false,
+          edit: false,
+          delete: false,
+        },
+        "Bakiye-Yonetimi": {
+          view: false,
+          load: false,
+        },
+        "Komisyon-Yonetimi": {
+          view: false,
+          edit: false,
+        },
+        "Panel-Kullanicilari": {
+          view: false,
+          create: false,
+          edit: false,
+          delete: false,
+        },
+        "Program-Kullanicilari": {
+          view: false,
+          create: false,
+          edit: false,
+          delete: false,
+        },
+        "Kilometre-Hacker": {
+          view: false,
+          create: false,
+          query: false,
+        },
+        "VIN-Hacker": {
+          view: false,
+          create: false,
+          query: false,
+        },
+        "Cihaz-Satislari": {
+          view: false,
+          create: false,
+          edit: false,
+        },
+        "Cihaz-Satin-Al": {
+          view: false,
+          create: false,
+        },
+        "Roller": {
+          view: false,
+          create: false,
+          edit: false,
+          delete: false,
+        },
+        "Raporlar": { view: false },
+        "Ayarlar": {
+          view: false,
+          edit: false,
+        },
+      },
     },
   });
 
+  // Rol izinlerini getir
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      if (role?.name) {
+        console.log("Rol adı:", role.name);
+        try {
+          const response = await api.get(`/roles/list-permissions?role=${role.name}`);
+          if (response.data.success) {
+            console.log("Yüklenen izinler:", response.data.data);
+            const permissions = response.data.data;
+            
+            // Form state'ini sıfırla
+            form.reset({
+              permissions: {
+                "Panel": { view: Boolean(permissions["Panel"]?.view) },
+                "Firmalar": {
+                  view: Boolean(permissions["Firmalar"]?.view),
+                  create: Boolean(permissions["Firmalar"]?.create),
+                  edit: Boolean(permissions["Firmalar"]?.edit),
+                  delete: Boolean(permissions["Firmalar"]?.delete),
+                },
+                "Bayiler": {
+                  view: Boolean(permissions["Bayiler"]?.view),
+                  create: Boolean(permissions["Bayiler"]?.create),
+                  edit: Boolean(permissions["Bayiler"]?.edit),
+                  delete: Boolean(permissions["Bayiler"]?.delete),
+                },
+                "Bakiye-Yonetimi": {
+                  view: Boolean(permissions["Bakiye-Yonetimi"]?.view),
+                  load: Boolean(permissions["Bakiye-Yonetimi"]?.load),
+                },
+                "Komisyon-Yonetimi": {
+                  view: Boolean(permissions["Komisyon-Yonetimi"]?.view),
+                  edit: Boolean(permissions["Komisyon-Yonetimi"]?.edit),
+                },
+                "Panel-Kullanicilari": {
+                  view: Boolean(permissions["Panel-Kullanicilari"]?.view),
+                  create: Boolean(permissions["Panel-Kullanicilari"]?.create),
+                  edit: Boolean(permissions["Panel-Kullanicilari"]?.edit),
+                  delete: Boolean(permissions["Panel-Kullanicilari"]?.delete),
+                },
+                "Program-Kullanicilari": {
+                  view: Boolean(permissions["Program-Kullanicilari"]?.view),
+                  create: Boolean(permissions["Program-Kullanicilari"]?.create),
+                  edit: Boolean(permissions["Program-Kullanicilari"]?.edit),
+                  delete: Boolean(permissions["Program-Kullanicilari"]?.delete),
+                },
+                "Kilometre-Hacker": {
+                  view: Boolean(permissions["Kilometre-Hacker"]?.view),
+                  create: Boolean(permissions["Kilometre-Hacker"]?.create),
+                  query: Boolean(permissions["Kilometre-Hacker"]?.query),
+                },
+                "VIN-Hacker": {
+                  view: Boolean(permissions["VIN-Hacker"]?.view),
+                  create: Boolean(permissions["VIN-Hacker"]?.create),
+                  query: Boolean(permissions["VIN-Hacker"]?.query),
+                },
+                "Cihaz-Satislari": {
+                  view: Boolean(permissions["Cihaz-Satislari"]?.view),
+                  create: Boolean(permissions["Cihaz-Satislari"]?.create),
+                  edit: Boolean(permissions["Cihaz-Satislari"]?.edit),
+                },
+                "Cihaz-Satin-Al": {
+                  view: Boolean(permissions["Cihaz-Satin-Al"]?.view),
+                  create: Boolean(permissions["Cihaz-Satin-Al"]?.create),
+                },
+                "Roller": {
+                  view: Boolean(permissions["Roller"]?.view),
+                  create: Boolean(permissions["Roller"]?.create),
+                  edit: Boolean(permissions["Roller"]?.edit),
+                  delete: Boolean(permissions["Roller"]?.delete),
+                },
+                "Raporlar": { view: Boolean(permissions["Raporlar"]?.view) },
+                "Ayarlar": {
+                  view: Boolean(permissions["Ayarlar"]?.view),
+                  edit: Boolean(permissions["Ayarlar"]?.edit),
+                },
+              },
+            });
+          } else {
+            toast({
+              title: "Hata",
+              description: response.data.message || "İzinler getirilemedi",
+              variant: "destructive",
+            });
+          }
+        } catch (error: any) {
+          console.error("Error fetching permissions:", error);
+          toast({
+            title: "Hata",
+            description: error.response?.data?.message || "İzinler getirilirken bir hata oluştu",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    fetchPermissions();
+  }, [role?.name, form, toast]);
+
+  useEffect(() => {
+    console.log("Form değerleri güncellendi:", form.getValues());
+  }, [form.watch()]);
+  
   const mutation = useMutation({
     mutationFn: async (values: RoleFormValues) => {
-      console.log("Form değerleri:", values);
-      const response = await fetch(role ? `/api/roles/${role.id}` : "/api/roles", {
-        method: role ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API Hatası:", errorText); // Added detailed error logging
-        throw new Error(errorText);
+      console.log("Role name being sent:", role?.name); // Add this log
+      
+      if (!role?.name) {
+        throw new Error("Rol adı zorunludur");
       }
-
-      return response.json();
+      
+      const response = await api.post("/roles/update-permissions", {
+        role: role.name, // Use role.name directly, not role?.name
+        permissions: values.permissions,
+      });
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roles"] });
       toast({
         title: "Başarılı",
-        description: role ? "Rol başarıyla güncellendi" : "Rol başarıyla eklendi",
+        description: "Rol izinleri başarıyla güncellendi",
       });
       setOpen(false);
       form.reset();
@@ -167,11 +309,11 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
         onClose();
       }
     },
-    onError: (error) => {
-      console.error("Rol kaydetme hatası:", error); // Added detailed error logging
+    onError: (error: any) => {
+      console.error("İzin güncelleme hatası:", error);
       toast({
         title: "Hata",
-        description: `${role ? "Rol güncellenirken" : "Rol eklenirken"} bir hata oluştu: ${error}`,
+        description: error.response?.data?.message || "Rol izinleri güncellenirken bir hata oluştu",
         variant: "destructive",
       });
     },
@@ -191,18 +333,22 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
   }
 
   function handleSelectAllPermissions(select: boolean) {
-    Object.entries(defaultPermissions).forEach(([module, permissions]) => {
-      Object.keys(permissions).forEach((action) => {
-        form.setValue(`permissions.${module}.${action}`, select, {
-          shouldValidate: true,
+    const permissions = form.getValues("permissions");
+    Object.keys(permissions).forEach((module) => {
+      const modulePermissions = permissions[module as keyof typeof permissions];
+      if (modulePermissions) {
+        Object.keys(modulePermissions).forEach((action) => {
+          form.setValue(`permissions.${module}.${action}` as any, select, {
+            shouldValidate: true,
+          });
         });
-      });
+      }
     });
   }
 
   function handleModulePermissions(module: string, permissions: object, select: boolean) {
     Object.keys(permissions).forEach((action) => {
-      form.setValue(`permissions.${module}.${action}`, select, {
+      form.setValue(`permissions.${module}.${action}` as any, select, {
         shouldValidate: true,
       });
     });
@@ -211,37 +357,10 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
   const dialogContent = (
     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
-        <DialogTitle>{role ? "Rol Düzenle" : "Yeni Rol Ekle"}</DialogTitle>
+        <DialogTitle>{role?.name} Rol İzinlerini Düzenle</DialogTitle>
       </DialogHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Rol Adı</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Açıklama</FormLabel>
-                <FormControl>
-                  <Textarea {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">İzinler</h3>
@@ -269,24 +388,10 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
               </div>
             </div>
 
-            {Object.entries(defaultPermissions).map(([module, permissions]) => (
+            {Object.entries(form.watch("permissions") || {}).map(([module, permissions]) => (
               <div key={module} className="space-y-2 border rounded-lg p-4">
                 <div className="flex justify-between items-center">
-                  <h4 className="font-medium capitalize">
-                    {module === "users" ? "Panel Kullanıcıları" :
-                      module === "dealers" ? "Bayiler" :
-                        module === "companies" ? "Firmalar" :
-                          module === "programUsers" ? "Program Kullanıcıları" :
-                            module === "balance" ? "Bakiye Yönetimi" :
-                              module === "kilometreHacker" ? "Kilometre Hacker" :
-                                module === "vinHacker" ? "VIN Hacker" :
-                                  module === "komisyonYonetimi" ? "Komisyon Yönetimi" :
-                                    module === "ayarlar" ? "Ayarlar" :
-                                      module === "cihazSatislari" ? "Cihaz Satışları" :
-                                        module === "cihazSatinAl" ? "Cihaz Satın Al" :
-                                          module === "reports" ? "Raporlar" :
-                                            module === "roles" ? "Roller" : "Panel"}
-                  </h4>
+                  <h4 className="font-medium">{module}</h4>
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -311,34 +416,33 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {Object.entries(permissions).map(([action, _]) => (
-                    <div key={action} className="flex items-center space-x-2">
-                      <FormField
-                        control={form.control}
-                        name={`permissions.${module}.${action}`}
-                        render={({ field }) => (
-                          <FormItem className="flex items-center space-x-2">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <label
-                              htmlFor={`${module}-${action}`}
-                              className="text-sm font-medium capitalize"
-                            >
-                              {action === "view" ? "Görüntüle" :
-                                action === "create" ? "Oluştur" :
-                                  action === "edit" ? "Düzenle" :
-                                    action === "delete" ? "Sil" :
-                                      action === "load" ? "Yükle" :
-                                        action === "query" ? "Sorgula" : action}
-                            </label>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                  {Object.entries(permissions).map(([action, value]) => (
+                    <FormField
+                      key={`${module}-${action}`}
+                      control={form.control}
+                      name={`permissions.${module}.${action}` as any}
+                      render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value as boolean}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <label
+                            htmlFor={`${module}-${action}`}
+                            className="text-sm font-medium capitalize"
+                          >
+                            {action === "view" ? "Görüntüle" :
+                              action === "create" ? "Oluştur" :
+                                action === "edit" ? "Düzenle" :
+                                  action === "delete" ? "Sil" :
+                                    action === "load" ? "Yükle" :
+                                      action === "query" ? "Sorgula" : action}
+                          </label>
+                        </FormItem>
+                      )}
+                    />
                   ))}
                 </div>
               </div>
@@ -350,7 +454,7 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
               İptal
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? (role ? "Güncelleniyor..." : "Ekleniyor...") : (role ? "Güncelle" : "Ekle")}
+              {mutation.isPending ? "Kaydediliyor..." : "Kaydet"}
             </Button>
           </div>
         </form>
@@ -366,15 +470,5 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
     );
   }
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Yeni Rol Ekle
-        </Button>
-      </DialogTrigger>
-      {dialogContent}
-    </Dialog>
-  );
+  return null;
 }

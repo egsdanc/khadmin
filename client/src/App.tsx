@@ -24,9 +24,9 @@ import { Layout } from "@/components/layout/Layout";
 import OdemeYapIyzico from "./pages/OdemeYapIyzico";
 import { useEffect, useState } from "react";
 import BlogEklePage from "./pages/BlogEklePage";
-import axios from "axios"; // Make sure axios is installed
+import axios from "axios";
 
-// Protected route component that checks permissions
+// Yeni ProtectedRoute bileşeni - her sayfa için izin kontrolü yapar
 const ProtectedRoute = ({ component: Component, path, ...rest }) => {
   const { user } = useAuth();
   const [hasPermission, setHasPermission] = useState(false);
@@ -34,8 +34,8 @@ const ProtectedRoute = ({ component: Component, path, ...rest }) => {
 
   useEffect(() => {
     const checkPermission = async () => {
-      // Admin ve Super Admin rolleri her zaman erişime sahip olacak
-      if (user?.role === "Admin" || user?.role === "Super Admin") {
+      // Super Admin her sayfaya erişebilir
+      if (user?.role === "Super Admin") {
         setHasPermission(true);
         setLoading(false);
         return;
@@ -46,14 +46,22 @@ const ProtectedRoute = ({ component: Component, path, ...rest }) => {
         
         if (response.data.success) {
           const permissions = response.data.data;
-          // Find the permission for this route
-          const routePermission = permissions.find(p => p.route === path);
           
-          // Check if the route exists and is visible
-          if (routePermission && routePermission.visible) {
-            setHasPermission(true);
+          // Path'den sayfa/panel adını çıkar
+          const pageName = getPageNameFromPath(path);
+          
+          // İzin kontrolü: Eğer sayfa izinlerde varsa, view iznine bakılır
+          // İzinlerde yoksa, varsayılan olarak erişime izin verilir
+          if (pageName in permissions) {
+            // Sayfa izinlerde var, view iznine bak
+            if (permissions[pageName]?.view) {
+              setHasPermission(true);
+            } else {
+              setHasPermission(false);
+            }
           } else {
-            setHasPermission(false);
+            // Sayfa izinlerde yok, varsayılan olarak erişime izin ver
+            setHasPermission(true);
           }
         } else {
           setHasPermission(false);
@@ -89,10 +97,43 @@ const ProtectedRoute = ({ component: Component, path, ...rest }) => {
   return <Component {...rest} />;
 };
 
+// Path'den sayfa adını çıkarmak için yardımcı fonksiyon
+function getPageNameFromPath(path) {
+  // Path'i / ile böl ve boş segmentleri filtrele
+  const segments = path.split('/').filter(segment => segment !== '');
+  
+  // İlk segment'i al (path'e göre düzenlenebilir)
+  const segment = segments[0] || '';
+  
+  // Path'e göre doğru permission key'ini bul
+  const pathMapping = {
+    '': 'Panel',
+    'panel': 'Panel',
+    'firmalar': 'Firmalar',
+    'bayiler': 'Bayiler',
+    'bakiye': 'Bakiye-Yonetimi',
+    'komisyon': 'Komisyon-Yonetimi',
+    'roller': 'Roller',
+    'kullanicilar': 'Program-Kullanicilari',
+    'panel-users': 'Panel-Kullanicilari',
+    'blog-ekle': 'BlogEkle',
+    'cihaz-satislari': 'Cihaz-Satislari',
+    'cihaz-satin-al': 'Cihaz-Satin-Al',
+    'ayarlar': 'Ayarlar',
+    'profil': 'Profil',
+    'vinreader': 'VIN-Hacker',
+    'kilometre': 'Kilometre-Hacker',
+    'raporlar': 'Raporlar',
+    'odeme-basarili': 'OdemeBasarili',
+    'odeme-yap-iyzico': 'OdemeYapIyzico'
+  };
+  
+  return pathMapping[segment] || segment;
+}
+
 function App() {
   const { user, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
-  const [permissionsLoading, setPermissionsLoading] = useState(false);
 
   useEffect(() => {
     // Redirect to login if user is not authenticated and not already on login page
@@ -101,7 +142,7 @@ function App() {
     }
   }, [user, isLoading, location, setLocation]);
 
-  if (isLoading || permissionsLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center">
         <div className="animate-spin">Loading...</div>
@@ -109,22 +150,21 @@ function App() {
     );
   }
 
-  // For login page
+  // Login sayfası yönetimi
   if (location === "/login") {
-    // If user is already logged in and tries to access login page, redirect to panel
     if (user) {
       return <Redirect to="/panel" />;
     }
     return <LoginPage />;
   }
 
-  // For all other routes, require authentication
+  // Kullanıcı giriş yapmadıysa
   if (!user) {
-    return null; // useEffect will handle redirect to login
+    return null; // useEffect ile login'e yönlendirilecek
   }
 
-  // Ortak sayfalar - bunlar için her rolün erişimi var
-  const commonRoutes = [
+  // Tüm sayfalar için routes dizisi
+  const allRoutes = [
     { path: "/", component: Panel },
     { path: "/panel", component: Panel },
     { path: "/profil", component: ProfilePage },
@@ -135,11 +175,7 @@ function App() {
     { path: "/raporlar", component: RaporlarPage },
     { path: "/bakiye", component: BakiyeYonetimi },
     { path: "/odeme-basarili", component: OdemeBasarili },
-    { path: "/odeme-yap-iyzico", component: OdemeYapIyzico }
-  ];
-
-  // İzin gerektiren sayfalar
-  const protectedRoutes = [
+    { path: "/odeme-yap-iyzico", component: OdemeYapIyzico },
     { path: "/firmalar", component: FirmalarPage },
     { path: "/kullanicilar", component: ProgramUsers },
     { path: "/panel-users", component: PanelUsersPage },
@@ -151,17 +187,11 @@ function App() {
     { path: "/cihaz-satin-al", component: CihazSatinAl }
   ];
 
-  // User is authenticated, show the protected routes
   return (
     <Layout>
       <Switch>
-        {/* Ortak sayfalar doğrudan erişilebilir */}
-        {commonRoutes.map(route => (
-          <Route key={route.path} path={route.path} component={route.component} />
-        ))}
-        
-        {/* İzin gerektiren sayfalar için ProtectedRoute kullanılır */}
-        {protectedRoutes.map(route => (
+        {/* Tüm sayfalar için ProtectedRoute kullanılır */}
+        {allRoutes.map(route => (
           <Route key={route.path} path={route.path}>
             <ProtectedRoute component={route.component} path={route.path} />
           </Route>
