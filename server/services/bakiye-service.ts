@@ -10,6 +10,7 @@ interface BakiyeHareketi {
   firma_adi?: string;
   manuel_yukleme: number;
   iyzico_yukleme: number;
+  sipay_yukleme: number;
   miktar: number;
   bakiye_sonrasi: number;
   aciklama?: string;
@@ -26,7 +27,7 @@ interface BakiyeFilter {
 }
 
 export class BakiyeService {
-  async bakiyeYukle(bayiId: number, miktar: number, yuklemeTipi: 'manual' | 'iyzico' = 'manual'): Promise<void> {
+  async bakiyeYukle(bayiId: number, miktar: number, yuklemeTipi: 'manual' | 'iyzico' | 'sipay' = 'manual'): Promise<void> {
     let connection: PoolConnection | null = null;
     try {
       connection = await db.getConnection();
@@ -45,7 +46,7 @@ export class BakiyeService {
       const yeniBakiye = mevcutBakiye + miktar;
 
       const formatNumberForDB = (num: number): string => {
-        return num.toFixed(2); 
+        return num.toFixed(2);
       };
 
       await connection.execute(
@@ -55,17 +56,23 @@ export class BakiyeService {
           bakiye_sonrasi,
           manuel_yukleme,
           iyzico_yukleme,
-          aciklama
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          sipay_yukleme,
+          aciklama,
+          status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           bayiId,
           formatNumberForDB(miktar),
           formatNumberForDB(yeniBakiye),
           yuklemeTipi === 'manual' ? "1.00" : '0.00',
           yuklemeTipi === 'iyzico' ? "1.00" : '0.00',
+          yuklemeTipi === 'sipay' ? "1.00" : '0.00',
           yuklemeTipi === 'manual' ?
             `Manuel bakiye yükleme: ${miktar.toFixed(2)} TL` :
-            `iyzico ile bakiye yükleme: ${miktar.toFixed(2)} TL`
+            yuklemeTipi === 'iyzico' ?
+              `iyzico ile bakiye yükleme: ${miktar.toFixed(2)} TL` :
+              `Sipay ile bakiye yükleme: ${miktar.toFixed(2)} TL`,
+          1
         ]
       );
 
@@ -104,7 +111,7 @@ export class BakiyeService {
         FROM bakiye_islemleri bi 
         LEFT JOIN bayiler b ON b.id = bi.bayi_id
         LEFT JOIN firmalar f ON f.id = b.firma
-        WHERE 1=1
+        WHERE bi.status = 1
       `;
 
       const conditions: string[] = [];
@@ -145,7 +152,7 @@ export class BakiyeService {
 
       // Toplam kayıt sayısını al
       const countQuery = `SELECT COUNT(bi.id) as total ${baseQuery} ${whereClause}`;
-      
+
       const [countRows] = await connection.execute(countQuery, params);
       const total = (countRows as any[])[0].total;
 
@@ -174,6 +181,7 @@ export class BakiyeService {
           bi.bakiye_sonrasi,
           bi.manuel_yukleme,
           bi.iyzico_yukleme,
+          bi.sipay_yukleme,
           bi.aciklama,
           bi.created_at,
           b.ad as bayi_adi,
@@ -196,6 +204,7 @@ export class BakiyeService {
         bayi_aktif: Boolean(row.bayi_aktif),
         manuel_yukleme: Number(row.manuel_yukleme || 0),
         iyzico_yukleme: Number(row.iyzico_yukleme || 0),
+        sipay_yukleme: Number(row.sipay_yukleme || 0),
         miktar: Number(row.miktar || 0),
         bakiye_sonrasi: Number(row.bakiye_sonrasi || 0),
         aciklama: row.aciklama,
@@ -232,6 +241,7 @@ export class BakiyeService {
               SELECT bakiye_sonrasi
               FROM bakiye_islemleri bi
               WHERE bi.bayi_id = b.id 
+                AND bi.status = 1
                 AND MONTH(bi.created_at) = ?
                 AND YEAR(bi.created_at) = ?
               ORDER BY bi.created_at DESC
@@ -244,6 +254,7 @@ export class BakiyeService {
               SELECT bakiye_sonrasi
               FROM bakiye_islemleri bi
               WHERE bi.bayi_id = b.id 
+                AND bi.status = 1
                 AND (
                   DATE(bi.created_at) < DATE(?)
                 )
@@ -258,11 +269,13 @@ export class BakiyeService {
                 CASE 
                   WHEN bi.manuel_yukleme > 0 THEN bi.manuel_yukleme
                   WHEN bi.iyzico_yukleme > 0 THEN bi.iyzico_yukleme
+                  WHEN bi.sipay_yukleme > 0 THEN bi.sipay_yukleme
                   ELSE bi.miktar
                 END
               )
               FROM bakiye_islemleri bi
               WHERE bi.bayi_id = b.id 
+                AND bi.status = 1
                 AND MONTH(bi.created_at) = ?
                 AND YEAR(bi.created_at) = ?
             ),

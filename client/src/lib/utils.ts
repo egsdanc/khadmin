@@ -21,8 +21,7 @@ export function formatCurrency(value: string | number): string {
 export function formatDate(date: string | Date): string {
   if (!date) return '';
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  const utcDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60 * 1000);
-  return format(utcDate, 'dd.MM.yyyy', { locale: tr });
+  return format(dateObj, 'dd.MM.yyyy HH:mm', { locale: tr });
 }
 
 // Türkçe karakter dönüşüm fonksiyonu

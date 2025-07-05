@@ -37,6 +37,12 @@ export const bakiye_islemleri = mysqlTable("bakiye_islemleri", {
     precision: 10,
     scale: 2,
   }).default(sql`NULL`),
+  sipay_yukleme: decimal("sipay_yukleme", {
+    precision: 10,
+    scale: 2,
+  }).default(sql`NULL`),
+  invoice_id: varchar("invoice_id", { length: 100 }),
+  status: int("status").default(0),
 });
 
 export const companies = mysqlTable("firmalar", {

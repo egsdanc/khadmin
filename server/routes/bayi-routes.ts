@@ -388,7 +388,7 @@ router.delete("/:id", async (req: Request, res: Response, next: NextFunction) =>
           ELSE 0 
         END), 0) as komisyon_sayisi
       FROM bakiye_islemleri 
-      WHERE bayi_id = ?`,
+      WHERE bayi_id = ? AND status = 1`,
       [bayiId]
     );
 

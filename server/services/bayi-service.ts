@@ -61,7 +61,7 @@ export class BayiService {
             ELSE 0 
           END), 0) as komisyon_sayisi
         FROM bakiye_islemleri 
-        WHERE bayi_id = ?`,
+        WHERE bayi_id = ? AND status = 1`,
         [id]
       );
 
@@ -93,7 +93,7 @@ export class BayiService {
 
       return {
         success: true,
-        message: hasTransactions 
+        message: hasTransactions
           ? `Bayi pasif duruma alındı. Bakiye işlem geçmişi korundu${detayliMesaj}`
           : 'Bayi başarıyla silindi.'
       };
@@ -141,7 +141,7 @@ export class BayiService {
         bayiData.il || null,
         bayiData.ilce || null,
         bayiData.aktif ? 1 : 0,
-        bayiData.firma_id || bayiData.firma || null, 
+        bayiData.firma_id || bayiData.firma || null,
         typeof bayiData.bayi_oran === 'number' ? bayiData.bayi_oran : null
       ];
 
@@ -215,7 +215,7 @@ export class BayiService {
         queryParams.push(aktif ? 1 : 0);
       }
 
-      const whereClause = whereConditions.length > 0 
+      const whereClause = whereConditions.length > 0
         ? 'WHERE ' + whereConditions.join(' AND ')
         : '';
 

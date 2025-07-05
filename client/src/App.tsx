@@ -14,6 +14,7 @@ import FirmalarPage from "@/pages/Firmalar";
 import RolesPage from "@/pages/RolesPage";
 import LocationSettings from "@/pages/LocationSettings";
 import OdemeBasarili from "@/pages/OdemeBasarili";
+import OdemeHatasi from "@/pages/OdemeHatasi";
 import KomisyonYonetimi from "@/pages/KomisyonYonetimi";
 import CihazSatislari from "@/pages/CihazSatislari";
 import CihazSatinAl from "@/pages/CihazSatinAl";
@@ -25,6 +26,7 @@ import OdemeYapIyzico from "./pages/OdemeYapIyzico";
 import { useEffect, useState } from "react";
 import BlogEklePage from "./pages/BlogEklePage";
 import axios from "axios";
+import SipayBakiyeEkrani from "./pages/SipayBakiyeEkrani";
 
 // Yeni ProtectedRoute bileşeni - her sayfa için izin kontrolü yapar
 const ProtectedRoute = ({ component: Component, path, ...rest }) => {
@@ -125,6 +127,7 @@ function getPageNameFromPath(path) {
     'kilometre': 'Kilometre-Hacker',
     'raporlar': 'Raporlar',
     'odeme-basarili': 'OdemeBasarili',
+    'odeme-hatasi': 'OdemeHatasi',
     'odeme-yap-iyzico': 'OdemeYapIyzico'
   };
   
@@ -174,7 +177,9 @@ function App() {
     { path: "/ayarlar/lokasyonlar", component: LocationSettings },
     { path: "/raporlar", component: RaporlarPage },
     { path: "/bakiye", component: BakiyeYonetimi },
+    { path: "/bakiye/bakiye-yukle", component: SipayBakiyeEkrani },
     { path: "/odeme-basarili", component: OdemeBasarili },
+    { path: "/odeme-hatasi", component: OdemeHatasi },
     { path: "/odeme-yap-iyzico", component: OdemeYapIyzico },
     { path: "/firmalar", component: FirmalarPage },
     { path: "/kullanicilar", component: ProgramUsers },

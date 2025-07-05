@@ -3,8 +3,10 @@ import { bakiyeService } from '../services/bakiye-service';
 import { z } from 'zod';
 import { requireAuth } from '../auth';
 import { db } from "@db";
+import { db as customDb } from "../services/database-service";
 import { bakiye_komisyonlar, companies, bayiler } from "@db/schema";
 import { eq, and, sql, count } from "drizzle-orm";
+import type { PoolConnection } from "mysql2/promise";
 
 const router = Router();
 
@@ -23,7 +25,7 @@ router.get("/bayi-bakiye", async (req, res) => {
 
     const validation = bayiBakiyeQuerySchema.safeParse(req.query);
     if (!validation.success) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: "Geçersiz ay/yıl parametreleri",
         errors: validation.error.errors
       });
@@ -40,7 +42,7 @@ router.get("/bayi-bakiye", async (req, res) => {
     });
   } catch (error) {
     console.error('Bayi bakiye raporu hatası:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Bayi bakiye raporu alınırken bir hata oluştu",
       error: error instanceof Error ? error.message : String(error)
@@ -68,7 +70,7 @@ router.get("/hareketler", async (req, res) => {
 
     const validation = hareketlerQuerySchema.safeParse(req.query);
     if (!validation.success) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: "Geçersiz filtre parametreleri",
         errors: validation.error.errors
       });
@@ -80,8 +82,8 @@ router.get("/hareketler", async (req, res) => {
 
     // Sadece belirli roller erişebilir
     if (!['Super Admin', 'Admin', 'Bayi'].includes(userRole)) {
-      return res.status(403).json({ 
-        message: "Bu işlemi gerçekleştirmek için yetkiniz bulunmamaktadır" 
+      return res.status(403).json({
+        message: "Bu işlemi gerçekleştirmek için yetkiniz bulunmamaktadır"
       });
     }
 
@@ -89,7 +91,7 @@ router.get("/hareketler", async (req, res) => {
     console.log('Parsed parameters:', { startDate, endDate, bayiler, firmalar, minTutar, maxTutar, siralama, page, limit });
 
     let bayilerFilter = bayiler ? bayiler.split(',').map(Number) : undefined;
-    
+
     // Eğer Bayi rolü ise, sadece kendi bayisinin verilerini görebilmeli
     if (userRole === 'Bayi' && bayi_id) {
       const bayiIdNum = parseInt(bayi_id, 10);
@@ -119,7 +121,7 @@ router.get("/hareketler", async (req, res) => {
     });
   } catch (error) {
     console.error('Bakiye hareketleri listeleme hatası:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Bakiye hareketleri listelenirken bir hata oluştu",
       error: error instanceof Error ? error.message : String(error)
     });
@@ -139,7 +141,7 @@ router.post("/yukle", async (req, res) => {
   try {
     const validation = bakiyeYukleSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: "Geçersiz bakiye yükleme bilgileri",
         errors: validation.error.errors
       });
@@ -150,13 +152,13 @@ router.post("/yukle", async (req, res) => {
 
     await bakiyeService.bakiyeYukle(bayi_id, miktar);
 
-    res.json({ 
-      success: true, 
-      message: "Bakiye yükleme işlemi başarıyla tamamlandı" 
+    res.json({
+      success: true,
+      message: "Bakiye yükleme işlemi başarıyla tamamlandı"
     });
   } catch (error) {
     console.error('Bakiye yükleme hatası:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Bakiye yükleme işlemi sırasında bir hata oluştu",
       error: error instanceof Error ? error.message : String(error)
     });
@@ -206,7 +208,7 @@ router.get("/komisyon-ozet", async (req, res) => {
     console.log('Oluşturulan SQL sorgusu:', query);
     console.log('Parametre değerleri:', params);
 
-    const result = await db.execute(query, params);
+    const result = await customDb.execute(query, params);
     const rows = result[0];
 
     res.json({
@@ -215,7 +217,7 @@ router.get("/komisyon-ozet", async (req, res) => {
     });
   } catch (error) {
     console.error('Komisyon özet raporu hatası:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Komisyon özet raporu alınırken bir hata oluştu",
       error: error instanceof Error ? error.message : String(error)
@@ -258,7 +260,7 @@ router.get("/komisyonlar", async (req, res) => {
 
     const offset = (page - 1) * limit;
 
-    const komisyonlar = await db
+    const komisyonlar = await customDb
       .select({
         id: bakiye_komisyonlar.id,
         test_id: bakiye_komisyonlar.test_id,
@@ -282,7 +284,7 @@ router.get("/komisyonlar", async (req, res) => {
       .offset(offset);
 
     // Toplam kayıt sayısını al
-    const countResult = await db
+    const countResult = await customDb
       .select({
         count: sql<number>`count(*)`
       })
@@ -303,7 +305,7 @@ router.get("/komisyonlar", async (req, res) => {
     });
   } catch (error) {
     console.error('Komisyon listesi hatası:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Komisyon listesi alınırken bir hata oluştu",
       error: error instanceof Error ? error.message : String(error)
@@ -318,7 +320,7 @@ router.get('/user-balance', async (req, res) => {
     const user = JSON.parse(userParam);
 
     // Create base query
-    let query = db
+    let query = customDb
       .select({
         count: count(),
         totalBalance: sql<string>`COALESCE(SUM(bakiye), 0)`.mapWith(String)
@@ -334,7 +336,7 @@ router.get('/user-balance', async (req, res) => {
       // Bayi rolü için sadece kendi bayi_id'sine ait veriyi getir
       query = query.where(
         and(
-          eq(bayiler.aktif, 1), 
+          eq(bayiler.aktif, 1),
           eq(bayiler.id, user.bayi_id)
         )
       );
@@ -368,6 +370,61 @@ router.get('/user-balance', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch user balance'
+    });
+  }
+});
+
+// Test endpoint to verify server is running updated code
+router.get('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Server is running updated code',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Get bakiye islemi by invoice_id
+router.get('/islem/:invoice_id', async (req, res) => {
+  try {
+    const { invoice_id } = req.params;
+
+    console.log('🔍 Bakiye islemi aranıyor, invoice_id:', invoice_id);
+
+    if (!invoice_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invoice ID gerekli'
+      });
+    }
+
+    const query = `
+      SELECT * FROM bakiye_islemleri 
+      WHERE invoice_id = ? AND status = 1
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `;
+
+    const rows = await customDb.executeQuery(query, [invoice_id]);
+
+    if (!rows || (rows as any[]).length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bakiye işlemi bulunamadı'
+      });
+    }
+
+    const islem = (rows as any[])[0];
+
+    res.json({
+      success: true,
+      data: islem
+    });
+
+  } catch (error) {
+    console.error('Error fetching bakiye islemi:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Sunucu hatası'
     });
   }
 });

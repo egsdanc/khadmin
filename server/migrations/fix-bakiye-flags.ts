@@ -7,7 +7,7 @@ export async function fixBakiyeFlags() {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // Set manuel_yukleme flag for all positive transactions
+    // Set manuel_yukleme flag for all positive transactions EXCEPT Sipay ones
     await connection.execute(`
       UPDATE bakiye_islemleri 
       SET manuel_yukleme = 1,
@@ -15,10 +15,11 @@ export async function fixBakiyeFlags() {
       WHERE miktar > 0 
         AND (manuel_yukleme = 0 OR manuel_yukleme IS NULL)
         AND (iyzico_yukleme = 0 OR iyzico_yukleme IS NULL)
+        AND (sipay_yukleme = 0 OR sipay_yukleme IS NULL OR sipay_yukleme = '0')
     `);
 
     await connection.commit();
-    console.log("Bakiye flags successfully updated");
+    console.log("Bakiye flags successfully updated (Sipay transactions excluded)");
   } catch (error) {
     if (connection) {
       await connection.rollback();

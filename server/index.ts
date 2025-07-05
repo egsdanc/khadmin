@@ -69,11 +69,16 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
+        // Special handling for Sipay responses to show more details
+        if (path.includes('/sipay')) {
+          console.log(`📡 Sipay Response for ${req.method} ${path}:`, JSON.stringify(capturedJsonResponse, null, 2));
+        }
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+      // Increase log line limit for better debugging
+      if (logLine.length > 500) {
+        logLine = logLine.slice(0, 499) + "…";
       }
 
       log(logLine);
