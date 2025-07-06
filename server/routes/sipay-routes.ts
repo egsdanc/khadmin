@@ -206,7 +206,7 @@ callbackRouter.post('/', async (req, res) => {
 
               // Önce bakiye işlemleri kaydını kontrol et
               const [bakiyeRows] = await connection.execute(
-                'SELECT id, bayi_id, miktar FROM bakiye_islemleri WHERE invoice_id = ? AND status = 0',
+                'SELECT id, bayi_id, miktar, bakiye_sonrasi FROM bakiye_islemleri WHERE invoice_id = ? AND status = 0',
                 [invoiceId]
               );
 
@@ -221,16 +221,42 @@ callbackRouter.post('/', async (req, res) => {
                 );
                 console.log('✅ Bakiye işlemi status güncellendi: invoice_id =', invoiceId);
 
-                // Bayi bakiyesini güncelle
-                if (record.bayi_id && record.bakiye_sonrasi) {
+                // Bayi bakiyesini güncelle - her durumda çalışacak şekilde
+                console.log('🔍 Bakiye güncelleme için veriler:', {
+                  bakiye_sonrasi: record.bakiye_sonrasi,
+                  miktar: record.miktar,
+                  bayi_id: record.bayi_id
+                });
+
+                // Mevcut bayi bakiyesini al
+                const [bayiRows] = await connection.execute(
+                  'SELECT bakiye FROM bayiler WHERE id = ?',
+                  [record.bayi_id]
+                );
+
+                if (bayiRows && (bayiRows as any[]).length > 0) {
+                  const currentBalance = parseFloat((bayiRows as any[])[0].bakiye || '0');
+                  const amount = parseFloat(record.miktar || '0');
+
+                  // bakiye_sonrasi varsa onu kullan, yoksa mevcut bakiye + miktar
+                  let newBalance;
+                  if (record.bakiye_sonrasi && record.bakiye_sonrasi !== null && record.bakiye_sonrasi !== '') {
+                    newBalance = parseFloat(record.bakiye_sonrasi);
+                    console.log('✅ bakiye_sonrasi kullanılıyor:', newBalance);
+                  } else {
+                    newBalance = currentBalance + amount;
+                    console.log('✅ Hesaplanan bakiye kullanılıyor:', newBalance);
+                  }
+
                   await connection.execute(
                     'UPDATE bayiler SET bakiye = ? WHERE id = ?',
-                    [record.bakiye_sonrasi, record.bayi_id]
+                    [newBalance.toString(), record.bayi_id]
                   );
-                  console.log('✅ Bayi bakiyesi güncellendi: bayi_id =', record.bayi_id, 'yeni_bakiye =', record.bakiye_sonrasi);
+                  console.log('✅ Bayi bakiyesi güncellendi:', newBalance);
                 } else {
-                  console.log('⚠️ Bayi bakiyesi güncellenemedi: bayi_id veya bakiye_sonrasi eksik');
+                  console.error('❌ Bayi bulunamadı:', record.bayi_id);
                 }
+
               }
 
               // Sipay panel fatura kaydını da güncelle
@@ -547,12 +573,8 @@ router.post('/sipay-paySmart3D', async (req, res) => {
     try {
       await connection.beginTransaction();
 
-      // Bayi bakiyesini güncelle
-      await connection.execute(
-        'UPDATE bayiler SET bakiye = ? WHERE id = ?',
-        [newBalance.toString(), bayi.id]
-      );
-      console.log('✅ Bayi bakiyesi güncellendi');
+      // Bayi bakiyesi callback'te güncellenecek, burada sadece bakiye_sonrasi hesaplanıyor
+      console.log('💰 Bakiye hesaplaması tamamlandı, yeni bakiye:', newBalance);
 
       // Bakiye işlemleri tablosuna kayıt ekle
       await connection.execute(
