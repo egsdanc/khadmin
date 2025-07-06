@@ -8,7 +8,6 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-
 export default defineConfig({
   plugins: [react(), runtimeErrorOverlay(), themePlugin()],
   publicDir: path.resolve(__dirname, "public"),
@@ -27,7 +26,8 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    // If you need specific server configurations
-    // But remove the 'static' property
+    host: true, // dış IP üzerinden erişimi aç
+    allowedHosts: ['admin.kilometrehacker.com'], // bu domain’e izin ver
+    port: 3001
   }
 });
