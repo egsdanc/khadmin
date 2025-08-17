@@ -189,7 +189,7 @@ router.get('/', async (req, res) => {
     // Tam yolları konsola yazdır
     (rows as any[]).forEach(blog => {
       if (blog.cover_image) {
-        const absolutePath = path.resolve(process.cwd(), blog.cover_image);
+        const absolutePath = path.resolve(process.cwd(), 'uploads', blog.cover_image);
         console.log(`Blog ID ${blog.id} için resim tam yolu:`, absolutePath);
       }
     });
@@ -255,7 +255,7 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
 
       // Delete old image if exists
       if (coverImagePath) {
-        const oldImagePath = path.join(process.cwd(), coverImagePath);
+        const oldImagePath = path.join(process.cwd(), 'uploads', coverImagePath);
         try {
           if (fs.existsSync(oldImagePath)) {
             console.log(`Eski resim siliniyor: ${oldImagePath}`);
@@ -365,8 +365,8 @@ router.delete('/:id', async (req, res) => {
     // Cover image varsa dosyayı sil
     const coverImagePath = (blog as any[])[0].cover_image;
     if (coverImagePath) {
-      const filePath = path.join(process.cwd(), coverImagePath);
-      const absoluteFilePath = path.resolve(process.cwd(), coverImagePath);
+      const filePath = path.join(process.cwd(), 'uploads', coverImagePath);
+      const absoluteFilePath = path.resolve(process.cwd(), 'uploads', coverImagePath);
       console.log(`Silinecek resmin tam yolu: ${absoluteFilePath}`);
 
       try {
@@ -386,7 +386,7 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Blog silme hatası:', error);
     res.status(500).json({
-      message: 'Blog silinirken bir hata oluştu',
+      message: 'Blog Silinirken bir hata oluştu',
       error: (error as Error).message
     });
   } finally {

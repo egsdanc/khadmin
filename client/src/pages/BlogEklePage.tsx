@@ -138,43 +138,43 @@ export default function BlogEklePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim()) {
       showNotification('error', 'Lütfen blog başlığını girin.');
       return;
     }
-  
+
     if (!content.trim()) {
       showNotification('error', 'Lütfen blog içeriğini girin.');
       return;
     }
-  
+
     if (!imageFile && !editingBlog) {
       showNotification('error', 'Lütfen bir kapak fotoğrafı seçin.');
       return;
     }
-  
+
     const formData = new FormData();
     formData.append('title', title);
     formData.append('content', content);
     if (imageFile) {
       formData.append('coverImage', imageFile);
     }
-  
+
     setIsSubmitting(true);
-  
+
     try {
-      const url = editingBlog 
+      const url = editingBlog
         ? `/api/blogs/${editingBlog.id}`
         : '/api/blogs';
-      
+
       const method = editingBlog ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         body: formData
       });
-  
+
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
@@ -183,21 +183,21 @@ export default function BlogEklePage() {
         setIsSubmitting(false);
         return;
       }
-  
+
       const result = await response.json();
-  
+
       if (response.ok) {
-        showNotification('success', editingBlog 
+        showNotification('success', editingBlog
           ? 'Blog başarıyla güncellendi!'
           : 'Blog başarıyla eklendi!');
-        
+
         // Reset form
         setTitle('');
         setContent('');
         setImageFile(null);
         setImagePreview(null);
         setEditingBlog(null);
-        
+
         // Reset Quill editor
         if (quillRef.current) {
           quillRef.current.getEditor().setText('');
@@ -210,7 +210,7 @@ export default function BlogEklePage() {
       }
     } catch (error) {
       console.error('Detaylı hata:', error);
-      
+
       if (error instanceof TypeError) {
         showNotification('error', 'Ağ hatası. Bağlantınızı kontrol edin.');
       } else if (error instanceof SyntaxError) {
@@ -271,13 +271,13 @@ export default function BlogEklePage() {
   }, []);
 
   const filteredAndSortedBlogs = blogs
-    .filter(blog => 
+    .filter(blog =>
       blog.title.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
       const dateA = new Date(a.created_at);
       const dateB = new Date(b.created_at);
-      return sortOrder === 'asc' 
+      return sortOrder === 'asc'
         ? dateA.getTime() - dateB.getTime()
         : dateB.getTime() - dateA.getTime();
     });
@@ -296,13 +296,13 @@ export default function BlogEklePage() {
       });
 
       if (!response.ok) {
-        throw new Error('Blog silinirken bir hata oluştu');
+        throw new Error('Blog silinirken bir hata oluştu.');
       }
 
       showNotification('success', 'Blog başarıyla silindi');
       fetchBlogs(); // Refresh the list
     } catch (error) {
-      showNotification('error', 'Blog silinirken bir hata oluştu');
+      showNotification('error', 'Blog silinirken bir hata oluştu2');
     } finally {
       setDeleteDialogOpen(false);
       setBlogToDelete(null);
@@ -340,7 +340,7 @@ export default function BlogEklePage() {
           <TabsTrigger value="add">Blog Ekle/Düzenle</TabsTrigger>
           <TabsTrigger value="list">Blog Listesi</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="add">
           <Card>
             <CardHeader>
