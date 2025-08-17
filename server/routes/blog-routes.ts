@@ -93,7 +93,8 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
     if (content.length > 65535) {  // Typical TEXT column limit
       return res.status(400).json({ message: 'Blog içeriği çok uzun' });
     }
-    console.log('Dosya gerçekten burada mı?:', fs.existsSync(path.join(process.cwd(), 'uploads', 'blog-images', req.file.filename)));
+
+    console.log('Dosya gerçekten burada mı?:', fs.existsSync(path.join('uploads', 'blog-images', req.file.filename)));
     // Dosya tam yolunu oluştur ve konsola yazdır
     const absoluteFilePath = path.resolve(req.file.path);
     console.log("Yüklenen dosyanın tam yolu:", absoluteFilePath);
@@ -189,7 +190,7 @@ router.get('/', async (req, res) => {
     // Tam yolları konsola yazdır
     (rows as any[]).forEach(blog => {
       if (blog.cover_image) {
-        const absolutePath = path.resolve(process.cwd(), 'uploads', blog.cover_image);
+        const absolutePath = path.resolve(blog.cover_image);
         console.log(`Blog ID ${blog.id} için resim tam yolu:`, absolutePath);
       }
     });
@@ -255,7 +256,7 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
 
       // Delete old image if exists
       if (coverImagePath) {
-        const oldImagePath = path.join(process.cwd(), 'uploads', coverImagePath);
+        const oldImagePath = path.join(coverImagePath);
         try {
           if (fs.existsSync(oldImagePath)) {
             console.log(`Eski resim siliniyor: ${oldImagePath}`);
@@ -329,7 +330,7 @@ router.get('/getphoto/:imageName', async (req, res) => {
   const { imageName } = req.params;
 
   // Fotoğraf yolunu oluştur (mutlak yol)
-  const filePath = path.resolve(process.cwd(), 'uploads', 'blog-images', imageName);
+  const filePath = path.resolve('uploads', 'blog-images', imageName);
   console.log(`Erişilmeye çalışılan resmin tam yolu: ${filePath}`);
 
   // Fotoğraf dosyasının var olup olmadığını kontrol et
@@ -365,8 +366,8 @@ router.delete('/:id', async (req, res) => {
     // Cover image varsa dosyayı sil
     const coverImagePath = (blog as any[])[0].cover_image;
     if (coverImagePath) {
-      const filePath = path.join(process.cwd(), 'uploads', coverImagePath);
-      const absoluteFilePath = path.resolve(process.cwd(), 'uploads', coverImagePath);
+      const filePath = path.join(coverImagePath);
+      const absoluteFilePath = path.resolve(coverImagePath);
       console.log(`Silinecek resmin tam yolu: ${absoluteFilePath}`);
 
       try {
@@ -386,7 +387,7 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Blog silme hatası:', error);
     res.status(500).json({
-      message: 'Blog Silinirken bir hata oluştu',
+      message: 'Blog silinirken bir hata oluştu',
       error: (error as Error).message
     });
   } finally {
