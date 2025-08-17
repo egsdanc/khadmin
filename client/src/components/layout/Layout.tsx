@@ -45,8 +45,8 @@ export function Layout({ children }: LayoutProps) {
   const [permissions, setPermissions] = useState<Permissions | null>(null);
   const [loading, setLoading] = useState(true);
 
- // const isAdmin = user?.role === "Admin" || user?.role === "Super Admin";
-   const isAdmin =  user?.role === "Super Admin";
+  // const isAdmin = user?.role === "Admin" || user?.role === "Super Admin";
+  const isAdmin = user?.role === "Admin";
 
   const isSuperAdmin = user?.role === "Super Admin";
   const isBayi = user?.role === "Bayi";
@@ -62,7 +62,7 @@ export function Layout({ children }: LayoutProps) {
     try {
       const response = await fetch(`/api/roles/rolekontrol?role=${role}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setPermissions(data.data);
       } else {
@@ -77,107 +77,107 @@ export function Layout({ children }: LayoutProps) {
 
   // Define all menu items with their permission keys
   const allMenuItems = [
-    { 
-      href: "/panel", 
-      label: "Panel", 
+    {
+      href: "/panel",
+      label: "Panel",
       icon: PanelLeft,
       permissionKey: "Panel",
       visible: permissions ? !!permissions["Panel"]?.view : isAdmin || isBayi
     },
-    { 
-      href: "/firmalar", 
-      label: "Firmalar", 
+    {
+      href: "/firmalar",
+      label: "Firmalar",
       icon: Building2,
       permissionKey: "Firmalar",
       visible: permissions ? !!permissions["Firmalar"]?.view : isAdmin
     },
-    { 
-      href: "/bayiler", 
-      label: "Bayiler", 
+    {
+      href: "/bayiler",
+      label: "Bayiler",
       icon: Store,
       permissionKey: "Bayiler",
       visible: permissions ? !!permissions["Bayiler"]?.view : isAdmin
     },
-    { 
-      href: "/bakiye", 
-      label: "Bakiye Yönetimi", 
+    {
+      href: "/bakiye",
+      label: "Bakiye Yönetimi",
       icon: Wallet,
       permissionKey: "Bakiye-Yonetimi",
       visible: permissions ? !!permissions["Bakiye-Yonetimi"]?.view : true
     },
-    { 
-      href: "/komisyon", 
-      label: "Komisyon Yönetimi", 
+    {
+      href: "/komisyon",
+      label: "Komisyon Yönetimi",
       icon: Percent,
       permissionKey: "Komisyon-Yonetimi",
       visible: permissions ? !!permissions["Komisyon-Yonetimi"]?.view : isAdmin
     },
-    { 
-      href: "/panel-users", 
-      label: "Panel Kullanıcıları", 
+    {
+      href: "/panel-users",
+      label: "Panel Kullanıcıları",
       icon: Users,
       permissionKey: "Panel-Kullanicilari",
       visible: permissions ? !!permissions["Panel-Kullanicilari"]?.view : isAdmin
     },
-    { 
-      href: "/kullanicilar", 
-      label: "Program Kullanıcıları", 
+    {
+      href: "/kullanicilar",
+      label: "Program Kullanıcıları",
       icon: Users,
       permissionKey: "Program-Kullanicilari",
       visible: permissions ? !!permissions["Program-Kullanicilari"]?.view : isAdmin
     },
-    { 
-      href: "/kilometre", 
-      label: "Kilometre Hacker", 
+    {
+      href: "/kilometre",
+      label: "Kilometre Hacker",
       icon: Car,
       permissionKey: "Kilometre-Hacker",
       visible: permissions ? !!permissions["Kilometre-Hacker"]?.view : true
     },
-    { 
-      href: "/vinreader", 
-      label: "VIN Hacker", 
+    {
+      href: "/vinreader",
+      label: "VIN Hacker",
       icon: Car,
       permissionKey: "VIN-Hacker",
       visible: permissions ? !!permissions["VIN-Hacker"]?.view : true
     },
-    { 
-      href: "/cihaz-satislari", 
-      label: "Cihaz Satışları", 
+    {
+      href: "/cihaz-satislari",
+      label: "Cihaz Satışları",
       icon: ShoppingBag,
       permissionKey: "Cihaz-Satislari",
       visible: permissions ? !!permissions["Cihaz-Satislari"]?.view : isAdmin
     },
-    { 
-      href: "/cihaz-satin-al", 
-      label: "Cihaz Satın Al", 
+    {
+      href: "/cihaz-satin-al",
+      label: "Cihaz Satın Al",
       icon: PackageSearch,
       permissionKey: "Cihaz-Satin-Al",
       visible: permissions ? !!permissions["Cihaz-Satin-Al"]?.view : isAdmin
     },
-    { 
-      href: "/roller", 
-      label: "Roller", 
+    {
+      href: "/roller",
+      label: "Roller",
       icon: FileSpreadsheet,
       permissionKey: "Roller",
       visible: permissions ? !!permissions["Roller"]?.view : isAdmin
     },
-    { 
-      href: "/raporlar", 
-      label: "Raporlar", 
+    {
+      href: "/raporlar",
+      label: "Raporlar",
       icon: FileBarChart,
       permissionKey: "Raporlar",
       visible: permissions ? !!permissions["Raporlar"]?.view : true
     },
-    { 
-      href: "/blog-ekle", 
-      label: "Blog", 
+    {
+      href: "/blog-ekle",
+      label: "Blog",
       icon: PanelLeft,
       permissionKey: "Blog",
-      visible: isAdmin // Blog might not have a permission entry, default to isAdmin
+      visible: permissions ? !!permissions["Blog"]?.view : isSuperAdmin// Blog might not have a permission entry, default to isAdmin
     },
-    { 
-      href: "/ayarlar", 
-      label: "Ayarlar", 
+    {
+      href: "/ayarlar",
+      label: "Ayarlar",
       icon: Settings,
       permissionKey: "Ayarlar",
       visible: permissions ? !!permissions["Ayarlar"]?.view : true
@@ -187,14 +187,14 @@ export function Layout({ children }: LayoutProps) {
   // Filter menu items based on permissions
   const menuItems = allMenuItems.filter(item => {
     if (loading) return false;
-    
+
     if (isSuperAdmin) return true; // Super Admin sees everything
-    
+
     if (permissions && item.permissionKey) {
       const permissionEntry = permissions[item.permissionKey];
       return permissionEntry && permissionEntry.view === true;
     }
-    
+
     return item.visible;
   });
 
@@ -215,8 +215,8 @@ export function Layout({ children }: LayoutProps) {
       >
         {/* Sidebar Header */}
         <div className="flex h-14 items-center justify-between border-b px-4">
-        <span className="text-sm sm:text-lg font-semibold pl-12 sm:pl-0">Kilometre Hacker</span>
-        <Button
+          <span className="text-sm sm:text-lg font-semibold pl-12 sm:pl-0">Kilometre Hacker</span>
+          <Button
             variant="ghost"
             size="icon"
             className="lg:hidden"

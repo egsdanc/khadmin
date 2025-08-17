@@ -26,18 +26,18 @@ const db = mysql.createPool(dbConfig);
 // Depolama konfigürasyonu
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join('public', 'uploads', 'blog-images');
-    
+    // public klasörü yerine uploads klasörü kullan
+    const uploadPath = path.join(process.cwd(), 'uploads', 'blog-images');
+
     // Klasör yoksa oluştur
-    if (!fs.existsSync(uploadPath)){
+    if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
-    
+
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    // Benzersiz dosya adı oluştur
-    const uniqueSuffix = Date.now() + '-' + 
+    const uniqueSuffix = Date.now() + '-' +
       crypto.randomBytes(10).toString('hex');
     cb(null, `blog-image-${uniqueSuffix}${path.extname(file.originalname)}`);
   }
@@ -47,7 +47,7 @@ const storage = multer.diskStorage({
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   // Sadece resim dosyaları kabul et
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  
+
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -55,7 +55,7 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
   }
 };
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
@@ -70,7 +70,7 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
   let connection;
   try {
     const { title, content } = req.body;
-    
+
     // Input validation
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Blog başlığı gereklidir' });
@@ -98,7 +98,7 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
     // Dosya tam yolunu oluştur ve konsola yazdır
     const absoluteFilePath = path.resolve(req.file.path);
     console.log("Yüklenen dosyanın tam yolu:", absoluteFilePath);
-    
+
     // Dosyanın web'den erişilebilir yolu
     const coverImagePath = path.join('uploads', 'blog-images', path.basename(req.file.path));
     console.log("Dosyanın web'den erişilebilir yolu:", `/${coverImagePath}`);
@@ -125,8 +125,8 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
       VALUES (?, ?, ?)
     `;
     const [result] = await connection.execute(insertQuery, [
-      title, 
-      content, 
+      title,
+      content,
       coverImagePath
     ]);
 
@@ -138,18 +138,18 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
     });
   } catch (error) {
     console.error('Blog ekleme hatası:', error);
-    
+
     // More granular error handling
     if (error instanceof multer.MulterError) {
       // Multer-specific errors (file size, file type)
-      return res.status(400).json({ 
-        message: error.message || 'Dosya yükleme hatası' 
+      return res.status(400).json({
+        message: error.message || 'Dosya yükleme hatası'
       });
     }
 
     if ((error as any).code === 'ER_DATA_TOO_LONG') {
-      return res.status(400).json({ 
-        message: 'Girilen veriler çok uzun' 
+      return res.status(400).json({
+        message: 'Girilen veriler çok uzun'
       });
     }
 
@@ -162,9 +162,9 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
       }
     }
 
-    res.status(500).json({ 
-      message: 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.', 
-      error: (error as Error).message 
+    res.status(500).json({
+      message: 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.',
+      error: (error as Error).message
     });
   } finally {
     if (connection) {
@@ -178,15 +178,15 @@ router.get('/', async (req, res) => {
   let connection;
   try {
     connection = await db.getConnection();
-    
+
     const query = `
       SELECT id, title, content, cover_image, created_at 
       FROM blogs 
       ORDER BY created_at DESC
     `;
-    
+
     const [rows] = await connection.execute(query);
-    
+
     // Tam yolları konsola yazdır
     (rows as any[]).forEach(blog => {
       if (blog.cover_image) {
@@ -194,13 +194,13 @@ router.get('/', async (req, res) => {
         console.log(`Blog ID ${blog.id} için resim tam yolu:`, absolutePath);
       }
     });
-    
+
     res.status(200).json(rows);
   } catch (error) {
     console.error('Blog listeleme hatası:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Bloglar listelenirken bir hata oluştu',
-      error: (error as Error).message 
+      error: (error as Error).message
     });
   } finally {
     if (connection) {
@@ -215,7 +215,7 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content } = req.body;
-    
+
     // Input validation
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Blog başlığı gereklidir' });
@@ -253,7 +253,7 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
       // Yeni yüklenen dosyanın tam yolunu konsola yazdır
       const absoluteFilePath = path.resolve(req.file.path);
       console.log(`Blog ID ${id} için yeni yüklenen dosyanın tam yolu:`, absoluteFilePath);
-      
+
       // Delete old image if exists
       if (coverImagePath) {
         const oldImagePath = path.join('public', coverImagePath);
@@ -293,16 +293,16 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
     });
   } catch (error) {
     console.error('Blog güncelleme hatası:', error);
-    
+
     if (error instanceof multer.MulterError) {
-      return res.status(400).json({ 
-        message: error.message || 'Dosya yükleme hatası' 
+      return res.status(400).json({
+        message: error.message || 'Dosya yükleme hatası'
       });
     }
 
     if ((error as any).code === 'ER_DATA_TOO_LONG') {
-      return res.status(400).json({ 
-        message: 'Girilen veriler çok uzun' 
+      return res.status(400).json({
+        message: 'Girilen veriler çok uzun'
       });
     }
 
@@ -314,9 +314,9 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
       }
     }
 
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.',
-      error: (error as Error).message 
+      error: (error as Error).message
     });
   } finally {
     if (connection) {
@@ -332,14 +332,14 @@ router.get('/getphoto/:imageName', async (req, res) => {
   // Fotoğraf yolunu oluştur (mutlak yol)
   const filePath = path.resolve('public', 'uploads', 'blog-images', imageName);
   console.log(`Erişilmeye çalışılan resmin tam yolu: ${filePath}`);
-  
+
   // Fotoğraf dosyasının var olup olmadığını kontrol et
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
       console.error(`Resim bulunamadı: ${filePath}`, err);
       return res.status(404).json({ message: 'Fotoğraf bulunamadı' });
     }
-    
+
     // Fotoğraf dosyasını yanıt olarak döndür
     res.sendFile(filePath);
   });
@@ -350,7 +350,7 @@ router.delete('/:id', async (req, res) => {
   let connection;
   try {
     const { id } = req.params;
-    
+
     connection = await db.getConnection();
 
     // Önce blog'un var olup olmadığını ve cover_image'ını kontrol et
@@ -369,7 +369,7 @@ router.delete('/:id', async (req, res) => {
       const filePath = path.join('public', coverImagePath);
       const absoluteFilePath = path.resolve('public', coverImagePath);
       console.log(`Silinecek resmin tam yolu: ${absoluteFilePath}`);
-      
+
       try {
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
@@ -386,9 +386,9 @@ router.delete('/:id', async (req, res) => {
     res.status(200).json({ message: 'Blog başarıyla silindi' });
   } catch (error) {
     console.error('Blog silme hatası:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Blog silinirken bir hata oluştu',
-      error: (error as Error).message 
+      error: (error as Error).message
     });
   } finally {
     if (connection) {

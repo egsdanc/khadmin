@@ -88,6 +88,12 @@ const permissionSchema = z.object({
     edit: z.boolean(),
     delete: z.boolean(),
   }),
+  "Blog": z.object({
+    view: z.boolean(),
+    create: z.boolean(),
+    edit: z.boolean(),
+    delete: z.boolean(),
+  }),
   "Raporlar": z.object({
     view: z.boolean(),
   }),
@@ -170,6 +176,12 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
           edit: false,
           delete: false,
         },
+        "Blog": {
+          view: false,
+          create: false,
+          edit: false,
+          delete: false,
+        },
         "Raporlar": { view: false },
         "Ayarlar": {
           view: false,
@@ -189,7 +201,7 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
           if (response.data.success) {
             console.log("Yüklenen izinler:", response.data.data);
             const permissions = response.data.data;
-            
+
             // Form state'ini sıfırla
             form.reset({
               permissions: {
@@ -252,6 +264,12 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
                   delete: Boolean(permissions["Roller"]?.delete),
                 },
                 "Raporlar": { view: Boolean(permissions["Raporlar"]?.view) },
+                "Blog": {
+                  view: Boolean(permissions["Blog"]?.view),
+                  create: Boolean(permissions["Blog"]?.create),
+                  edit: Boolean(permissions["Blog"]?.edit),
+                  delete: Boolean(permissions["Blog"]?.delete),
+                },
                 "Ayarlar": {
                   view: Boolean(permissions["Ayarlar"]?.view),
                   edit: Boolean(permissions["Ayarlar"]?.edit),
@@ -282,15 +300,15 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
   useEffect(() => {
     console.log("Form değerleri güncellendi:", form.getValues());
   }, [form.watch()]);
-  
+
   const mutation = useMutation({
     mutationFn: async (values: RoleFormValues) => {
       console.log("Role name being sent:", role?.name); // Add this log
-      
+
       if (!role?.name) {
         throw new Error("Rol adı zorunludur");
       }
-      
+
       const response = await api.post("/roles/update-permissions", {
         role: role.name, // Use role.name directly, not role?.name
         permissions: values.permissions,
