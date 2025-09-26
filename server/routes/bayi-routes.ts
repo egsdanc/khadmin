@@ -276,7 +276,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/bayiupdate/:id", async (req: Request, res: Response, next: NextFunction) => {
   let connection;
   try {
     console.log('Bayi güncelleme isteği:', req.body);

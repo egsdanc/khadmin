@@ -138,9 +138,9 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
 
   const bayiMutation = useMutation({
     mutationFn: async (submitData: BayiFormData) => {
-      const url = submitData.id ? `/api/bayiler/${submitData.id}` : '/api/bayiler';
+      const url = submitData.id ? `/api/bayiler/bayiupdate/${submitData.id}` : '/api/bayiler';
       const response = await fetch(url, {
-        method: submitData.id ? 'PUT' : 'POST',
+        method:'POST',
         headers: {
           'Content-Type': 'application/json',
         },
