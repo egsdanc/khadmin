@@ -134,7 +134,7 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
 
     // Tablo başlangıç pozisyonu
     const tableTop = 135;
-    const rowHeight = 15;
+    const rowHeight = 18; // Satır yüksekliğini artırdık
     const margin = 20;
     const tableWidth = doc.internal.pageSize.width - (margin * 2);
 
@@ -142,12 +142,20 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
     doc.setFillColor(240, 240, 240);
     doc.rect(margin, tableTop, tableWidth, rowHeight, 'F');
 
+    // Sütun genişlikleri - orijinal genişlikler
+    const modulColWidth = 50; // Modul sütunu için orijinal genişlik
+    const vinColWidth = 50;    // VIN sütunları için orijinal genişlik
+    const modulStart = margin + 5;
+    const vin1Start = modulStart + modulColWidth;
+    const vin2Start = vin1Start + vinColWidth;
+    const vin3Start = vin2Start + vinColWidth;
+
     // Başlıklar
     doc.setFont("helvetica", "bold");
-    addText("Modul", margin + 5, tableTop + 10);
-    addText("VIN1", margin + 50, tableTop + 10);
-    addText("VIN2", margin + 100, tableTop + 10);
-    addText("VIN3", margin + 150, tableTop + 10);
+    addText("Modul", modulStart, tableTop + 10);
+    addText("VIN1", vin1Start, tableTop + 10);
+    addText("VIN2", vin2Start, tableTop + 10);
+    addText("VIN3", vin3Start, tableTop + 10);
 
     // Veriler
     let currentY = tableTop + rowHeight;
@@ -159,12 +167,27 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
         currentY = 20;
       }
 
-      addText(test.kontrolmod || '', margin + 5, currentY + 10);
-      addText(test.vin1 || '', margin + 50, currentY + 10);
-      addText(test.vin2 || '', margin + 100, currentY + 10);
-      addText(test.vin3 || '', margin + 150, currentY + 10);
+      // Modul ismini çok satırlı olarak göster
+      const modulText = test.kontrolmod || '';
+      const maxWidth = modulColWidth - 5; // Sütun genişliği - padding
+      
+      // jsPDF'in splitTextToSize fonksiyonunu kullanarak metni böl
+      const splitText = doc.splitTextToSize(modulText, maxWidth);
+      const lineHeight = 4; // Satır arası yükseklik
+      
+      // Modul ismini çok satırlı olarak yaz
+      splitText.forEach((line: string, index: number) => {
+        addText(line, modulStart, currentY + 10 + (index * lineHeight));
+      });
+      
+      // VIN değerlerini yaz
+      addText(test.vin1 || '', vin1Start, currentY + 10);
+      addText(test.vin2 || '', vin2Start, currentY + 10);
+      addText(test.vin3 || '', vin3Start, currentY + 10);
 
-      currentY += rowHeight;
+      // Satır yüksekliğini çok satırlı metne göre ayarla
+      const textHeight = Math.max(splitText.length * lineHeight, 8);
+      currentY += Math.max(rowHeight, textHeight + 2);
     });
 
     doc.save(`vin-hacker-${firstTest.plaka}-${formatDate(firstTest.tarih)}.pdf`);

@@ -132,7 +132,7 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
 
     // Tablo başlangıç pozisyonu
     const tableTop = 135;
-    const rowHeight = 15;
+    const rowHeight = 18; // Satır yüksekliğini artırdık
     const margin = 20;
     const tableWidth = doc.internal.pageSize.width - (margin * 2);
 
@@ -140,10 +140,16 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
     doc.setFillColor(240, 240, 240);
     doc.rect(margin, tableTop, tableWidth, rowHeight, 'F');
 
+    // Sütun genişlikleri - orijinal genişlikler
+    const testTipiColWidth = 100; // Test Tipi sütunu için genişlik
+    const kilometreColWidth = 50;  // Kilometre sütunu için genişlik
+    const testTipiStart = margin + 5;
+    const kilometreStart = testTipiStart + testTipiColWidth;
+
     // Başlıklar
     doc.setFont("helvetica", "bold");
-    addText("Test Tipi", margin + 5, tableTop + 10);
-    addText("Kilometre", margin + 100, tableTop + 10);
+    addText("Modul", testTipiStart, tableTop + 10);
+    addText("Kilometre", kilometreStart, tableTop + 10);
 
     // Veriler
     let currentY = tableTop + rowHeight;
@@ -155,10 +161,25 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
         currentY = 20;
       }
 
-      addText(test.kontrolmod || '', margin + 5, currentY + 10);
-      addText(test.km || '', margin + 100, currentY + 10);
+      // Test tipi ismini çok satırlı olarak göster
+      const testTipiText = test.kontrolmod || '';
+      const maxWidth = testTipiColWidth - 5; // Sütun genişliği - padding
+      
+      // jsPDF'in splitTextToSize fonksiyonunu kullanarak metni böl
+      const splitText = doc.splitTextToSize(testTipiText, maxWidth);
+      const lineHeight = 4; // Satır arası yükseklik
+      
+      // Test tipi ismini çok satırlı olarak yaz
+      splitText.forEach((line: string, index: number) => {
+        addText(line, testTipiStart, currentY + 10 + (index * lineHeight));
+      });
+      
+      // Kilometre değerini yaz
+      addText(test.km || '', kilometreStart, currentY + 10);
 
-      currentY += rowHeight;
+      // Satır yüksekliğini çok satırlı metne göre ayarla
+      const textHeight = Math.max(splitText.length * lineHeight, 8);
+      currentY += Math.max(rowHeight, textHeight + 2);
     });
 
     doc.save(`kilometre-hacker-${firstTest.plaka}-${formatDate(firstTest.tarih)}.pdf`);
