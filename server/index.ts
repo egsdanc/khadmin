@@ -32,6 +32,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+//
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+//
 // Alternatif olarak, mevcut public klasörünü de serve edebilirsiniz
 app.use('/public', express.static(path.join(process.cwd(), 'public')));
 app.use(express.static(path.join(__dirname, 'public')));
