@@ -289,7 +289,7 @@ const translations = {
         'device-sales-list': 'Cihaz Satışları Listesi',
         'view-and-manage-all-device-sales': 'Tüm cihaz satışlarını görüntüleyin ve yönetin',
         'commission': 'Prim',
-        'total-commission': 'Toplam Prim',
+        'total-commission': 'Toplam Komisyon',
         'delete-sale-record': 'Satış Kaydını Sil',
         'are-you-sure-delete-sale-record': 'Bu satış kaydını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
         // Roller sayfası çevirileri
@@ -531,7 +531,15 @@ const translations = {
         'package-item-4-desc': '1 yıl garantili lisans ve destek',
         'warranty-and-support': 'Garanti ve Teknik Destek',
         'warranty-description': 'Cihazınız 1 yıl boyunca garantilidir. Teknik ekibimiz 7/24 yanınızda olup, WhatsApp üzerinden anlık destek sağlamaktadır. Her yapılan sorgulama için %10 + KDV ücretlendirilirsiniz.',
-        'technical-support': 'Teknik Destek'
+        'technical-support': 'Teknik Destek',
+        'all-time': 'Tüm zamanlar',
+        'total-sales-amount': 'Toplam satış tutarı',
+        'total-dealer-count': 'Toplam bayi sayısı',
+        'dealer-balance': 'Bayi Bakiyesi',
+        'all-dealers-balance': 'Tüm bayilerin bakiyesi',
+        'total-test-revenue': 'Toplam test geliri',
+        'total-company-count': 'Toplam firma sayısı',
+        'vin-test-count': 'VIN test sayısı'
   },
   en: {
     'dashboard': 'Dashboard',
@@ -1054,7 +1062,15 @@ const translations = {
         'package-item-4-desc': '1 year guaranteed license and support',
         'warranty-and-support': 'Warranty and Technical Support',
         'warranty-description': 'Your device is guaranteed for 1 year. Our technical team is with you 24/7 and provides instant support via WhatsApp. You are charged 10% + VAT for each query made.',
-        'technical-support': 'Technical Support'
+        'technical-support': 'Technical Support',
+        'all-time': 'All time',
+        'total-sales-amount': 'Total sales amount',
+        'total-dealer-count': 'Total dealer count',
+        'dealer-balance': 'Dealer Balance',
+        'all-dealers-balance': 'All dealers balance',
+        'total-test-revenue': 'Total test revenue',
+        'total-company-count': 'Total company count',
+        'vin-test-count': 'VIN test count'
   }
 };
 

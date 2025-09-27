@@ -270,56 +270,56 @@ const Panel = () => {
       title: t('total-commission'),
       value: totalCommissionData?.data?.formattedTotalCommission || "0,00 ₺",
       icon: TrendingUp,
-      description: "Tüm zamanlar",
+      description: t('all-time'),
       color: COLORS.primary
     },
     {
       title: t('device-sales'),
       value: satislarToplam?.data?.formattedTotal || "0,00 ₺",
       icon: DollarSign,
-      description: "Toplam satış tutarı",
+      description: t('total-sales-amount'),
       color: COLORS.secondary
     },
     {
       title: t('total-km-test'),
       value: totalKilometreTests.toString(),
       icon: Gauge,
-      description: "Tüm zamanlar",
+      description: t('all-time'),
       color: COLORS.success
     },
     {
       title: t('active-dealers'),
       value: activeDealersCount.toString(),
       icon: Users,
-      description: "Toplam bayi sayısı",
+      description: t('total-dealer-count'),
       color: COLORS.warning
     },
     {
       title: t('total-balance'),
       value: dealersData?.data?.formattedTotalBalance || "0,00 ₺",
       icon: CreditCard,
-      description: user.user.role === "Bayi" ? "Bayi Bakiyesi" :"Tüm bayilerin bakiyesi"  ,
+      description: user.user.role === "Bayi" ? t('dealer-balance') : t('all-dealers-balance'),
       color: COLORS.info
     },
     {
       title: t('total-test-fee'),
-      value: isLoadingFees ? "Yükleniyor..." : (totalFeesData?.data?.formattedTotalFees || "0,00 ₺"),
+      value: isLoadingFees ? t('loading') : (totalFeesData?.data?.formattedTotalFees || "0,00 ₺"),
       icon: ClipboardCheck,
-      description: "Toplam test geliri",
+      description: t('total-test-revenue'),
       color: COLORS.purple
     },
     {
       title: t('active-companies'),
       value: activeCompaniesCount.toString(),
       icon: Building2,
-      description: "Toplam firma sayısı",
+      description: t('total-company-count'),
       color: COLORS.orange
     },
     {
       title: t('total-vin-test'),
       value: totalVinTests.toString(),
       icon: Car,
-      description: "VIN test sayısı",
+      description: t('vin-test-count'),
       color: COLORS.teal
     }
   ];
@@ -327,7 +327,7 @@ const Panel = () => {
   console.log( "ufffuu",user.user.role)
   const stats = allStats.filter(stat => {
     if (
-      ["Cihaz Satış Toplamı", "Aktif Bayiler", "Aktif Firmalar", "Toplam Test Ücreti"].includes(stat.title) &&
+      [t('device-sales'), "Aktif Bayiler", "Aktif Firmalar", "Toplam Test Ücreti"].includes(stat.title) &&
       !["Admin", "Super Admin"].includes(user.user.role)
     ) {
       return false; // Eğer rol uygun değilse, bu elemanı filtrele
