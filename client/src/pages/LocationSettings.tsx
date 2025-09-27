@@ -48,15 +48,16 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Plus, Trash2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Form şemaları
 const ilSchema = z.object({
-  il: z.string().min(1, "İl adı gereklidir"),
+  il: z.string().min(1, "Province name is required"),
 });
 
 const ilceSchema = z.object({
-  ilce: z.string().min(1, "İlçe adı gereklidir"),
-  il_id: z.string().min(1, "İl seçimi gereklidir"),
+  ilce: z.string().min(1, "District name is required"),
+  il_id: z.string().min(1, "Province selection is required"),
 });
 
 type Il = {
@@ -66,6 +67,7 @@ type Il = {
 };
 
 export default function LocationSettings() {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedIl, setSelectedIl] = useState<Il | null>(null);
@@ -116,12 +118,12 @@ export default function LocationSettings() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error("İl eklenirken bir hata oluştu");
+      if (!response.ok) throw new Error(t('error-adding-province'));
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/il-ilce"] });
-      toast({ title: "Başarılı", description: "İl başarıyla eklendi" });
+      toast({ title: t('success'), description: t('province-added-successfully') });
       setIsIlDialogOpen(false);
       ilForm.reset();
     },
@@ -138,7 +140,7 @@ export default function LocationSettings() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "İlçe eklenirken bir hata oluştu");
+        throw new Error(error.message || t('error-adding-district'));
       }
       return response.json();
     },
@@ -174,7 +176,7 @@ export default function LocationSettings() {
       });
 
       // Hemen toast göster ve formu kapat
-      toast({ title: "Başarılı", description: "İlçe başarıyla eklendi" });
+      toast({ title: t('success'), description: t('district-added-successfully') });
       setIsIlceDialogOpen(false);
       ilceForm.reset({ il_id: selectedIl?.id.toString() || "", ilce: "" });
 
@@ -184,8 +186,8 @@ export default function LocationSettings() {
     onError: (error) => {
       console.error("İlçe ekleme hatası:", error);
       toast({ 
-        title: "Hata", 
-        description: error instanceof Error ? error.message : "İlçe eklenirken bir hata oluştu",
+        title: t('error'), 
+        description: error instanceof Error ? error.message : t('error-adding-district'),
         variant: "destructive"
       });
     }
@@ -200,7 +202,7 @@ export default function LocationSettings() {
   const deleteIlceMutation = useMutation({
     mutationFn: async (id: number) => {
       const response = await fetch(`/api/ilce/${id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("İlçe silinirken bir hata oluştu");
+      if (!response.ok) throw new Error(t('error-deleting-district'));
       return response.json();
     },
     onSuccess: (_, deletedId) => {
@@ -226,7 +228,7 @@ export default function LocationSettings() {
         return newData;
       });
 
-      toast({ title: "Başarılı", description: "İlçe başarıyla silindi" });
+      toast({ title: t('success'), description: t('district-deleted-successfully') });
       setIlceToDelete(null);
 
       // Arkaplanda verileri güncelle
@@ -235,8 +237,8 @@ export default function LocationSettings() {
     onError: (error) => {
       console.error("İlçe silme hatası:", error);
       toast({ 
-        title: "Hata", 
-        description: error instanceof Error ? error.message : "İlçe silinirken bir hata oluştu",
+        title: t('error'), 
+        description: error instanceof Error ? error.message : t('error-deleting-district'),
         variant: "destructive"
       });
       setIlceToDelete(null);
@@ -264,21 +266,21 @@ export default function LocationSettings() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div>
-              <CardTitle>İller</CardTitle>
+              <CardTitle>{t('province')}</CardTitle>
               <CardDescription>
-                Sistemde kayıtlı illeri yönetin
+                {t('manage-registered-provinces')}
               </CardDescription>
             </div>
             <Dialog open={isIlDialogOpen} onOpenChange={setIsIlDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Yeni İl
+                  {t('add-province')}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Yeni İl Ekle</DialogTitle>
+                  <DialogTitle>{t('add-province')}</DialogTitle>
                 </DialogHeader>
                 <Form {...ilForm}>
                   <form onSubmit={ilForm.handleSubmit((data) => createIlMutation.mutate(data))} className="space-y-4">
@@ -287,16 +289,16 @@ export default function LocationSettings() {
                       name="il"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>İl Adı</FormLabel>
+                          <FormLabel>{t('province-name')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="İl adını giriniz" />
+                            <Input {...field} placeholder={t('enter-province-name')} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                     <div className="flex justify-end">
-                      <Button type="submit">Ekle</Button>
+                      <Button type="submit">{t('add-province')}</Button>
                     </div>
                   </form>
                 </Form>
@@ -307,7 +309,7 @@ export default function LocationSettings() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>İl Adı</TableHead>
+                  <TableHead>{t('province-name')}</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -336,10 +338,10 @@ export default function LocationSettings() {
             <div className="mt-4 border-t">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
                 <div className="text-sm text-muted-foreground order-2 sm:order-1">
-                  Toplam {locations.length} kayıt
+                  {t('total')} {locations.length} {t('records')}
                   {locations.length > 0 && (
                     <span className="hidden sm:inline">
-                      {" "}({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, locations.length)} arası gösteriliyor)
+                      {" "}({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, locations.length)} {t('range')})
                     </span>
                   )}
                 </div>
@@ -376,9 +378,9 @@ export default function LocationSettings() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div>
-              <CardTitle>İlçeler</CardTitle>
+              <CardTitle>{t('district')}</CardTitle>
               <CardDescription>
-                {selectedIl ? `${selectedIl.il} iline ait ilçeleri yönetin` : 'Lütfen bir il seçin'}
+                {selectedIl ? `${selectedIl.il} ${t('province')} ${t('district')}` : t('select-province')}
               </CardDescription>
             </div>
             <Dialog 
@@ -393,12 +395,12 @@ export default function LocationSettings() {
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-2" disabled={!selectedIl}>
                   <Plus className="h-4 w-4" />
-                  Yeni İlçe
+                  {t('add-district')}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Yeni İlçe Ekle</DialogTitle>
+                  <DialogTitle>{t('add-district')}</DialogTitle>
                 </DialogHeader>
                 <Form {...ilceForm}>
                   <form onSubmit={ilceForm.handleSubmit(onIlceSubmit)} className="space-y-4">
@@ -407,7 +409,7 @@ export default function LocationSettings() {
                       name="il_id"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>İl</FormLabel>
+                          <FormLabel>{t('province')}</FormLabel>
                           <Select 
                             onValueChange={field.onChange} 
                             defaultValue={selectedIl?.id.toString()}
@@ -415,7 +417,7 @@ export default function LocationSettings() {
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="İl seçiniz" />
+                                <SelectValue placeholder={t('select-province')} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -435,9 +437,9 @@ export default function LocationSettings() {
                       name="ilce"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>İlçe Adı</FormLabel>
+                          <FormLabel>{t('district-name')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="İlçe adını giriniz" />
+                            <Input {...field} placeholder={t('enter-district-name')} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -451,10 +453,10 @@ export default function LocationSettings() {
                         {createIlceMutation.isPending ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Ekleniyor...
+                            {t('loading')}
                           </>
                         ) : (
-                          "Ekle"
+                          t('add-district')
                         )}
                       </Button>
                     </div>
@@ -467,7 +469,7 @@ export default function LocationSettings() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>İlçe Adı</TableHead>
+                  <TableHead>{t('district-name')}</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -489,14 +491,14 @@ export default function LocationSettings() {
                 {!selectedIl && (
                   <TableRow>
                     <TableCell colSpan={2} className="text-center text-muted-foreground">
-                      İlçeleri görüntülemek için bir il seçin
+                      {t('select-province')}
                     </TableCell>
                   </TableRow>
                 )}
                 {selectedIl && paginatedIlceler.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={2} className="text-center text-muted-foreground">
-                      Kayıtlı ilçe bulunmamaktadır
+                      {t('no-districts-found')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -508,9 +510,9 @@ export default function LocationSettings() {
               <div className="mt-4 border-t">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
                   <div className="text-sm text-muted-foreground order-2 sm:order-1">
-                    Toplam {selectedIl.ilceler.length} kayıt
+                    {t('total')} {selectedIl.ilceler.length} {t('records')}
                     <span className="hidden sm:inline">
-                      {" "}({(ilceCurrentPage - 1) * ilceItemsPerPage + 1} - {Math.min(ilceCurrentPage * ilceItemsPerPage, selectedIl.ilceler.length)} arası gösteriliyor)
+                      {" "}({(ilceCurrentPage - 1) * ilceItemsPerPage + 1} - {Math.min(ilceCurrentPage * ilceItemsPerPage, selectedIl.ilceler.length)} {t('range')})
                     </span>
                   </div>
                   <div className="flex items-center gap-2 order-1 sm:order-2">
@@ -551,14 +553,14 @@ export default function LocationSettings() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>İlçeyi Sil</AlertDialogTitle>
+            <AlertDialogTitle>{t('delete-district')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {ilceToDelete?.ilce} ilçesini silmek istediğinize emin misiniz?
-              Bu işlem geri alınamaz.
+              {ilceToDelete?.ilce} {t('are-you-sure-delete-district')}
+              {t('this-action-cannot-be-undone')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => ilceToDelete && deleteIlceMutation.mutate(ilceToDelete.id)}
@@ -566,10 +568,10 @@ export default function LocationSettings() {
               {deleteIlceMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Siliniyor...
+                  {t('loading')}
                 </>
               ) : (
-                "Sil"
+                t('delete')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

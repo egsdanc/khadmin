@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const modules = {
   toolbar: [
@@ -58,6 +59,7 @@ interface Blog {
 }
 
 export default function BlogEklePage() {
+  const { t } = useLanguage();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -98,14 +100,14 @@ export default function BlogEklePage() {
     if (file) {
       // Dosya boyutu kontrolü (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        showNotification('error', 'Dosya boyutu 5MB\'dan büyük olamaz.');
+        showNotification('error', t('file-size-too-large'));
         return;
       }
 
       // Dosya türü kontrolü
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
-        showNotification('error', 'Sadece JPEG, PNG, GIF ve WebP formatları desteklenir.');
+        showNotification('error', t('unsupported-file-format'));
         return;
       }
 
@@ -127,12 +129,12 @@ export default function BlogEklePage() {
     try {
       const response = await fetch('/api/blogs');
       if (!response.ok) {
-        throw new Error('Bloglar yüklenirken bir hata oluştu');
+        throw new Error(t('error-loading-blogs'));
       }
       const data = await response.json();
       setBlogs(data);
     } catch (error) {
-      showNotification('error', 'Bloglar yüklenirken bir hata oluştu');
+      showNotification('error', t('error-loading-blogs'));
     }
   };
 
@@ -140,17 +142,17 @@ export default function BlogEklePage() {
     e.preventDefault();
 
     if (!title.trim()) {
-      showNotification('error', 'Lütfen blog başlığını girin.');
+      showNotification('error', t('please-enter-blog-title'));
       return;
     }
 
     if (!content.trim()) {
-      showNotification('error', 'Lütfen blog içeriğini girin.');
+      showNotification('error', t('please-enter-blog-content'));
       return;
     }
 
     if (!imageFile && !editingBlog) {
-      showNotification('error', 'Lütfen bir kapak fotoğrafı seçin.');
+      showNotification('error', t('please-select-cover-photo'));
       return;
     }
 
@@ -179,7 +181,7 @@ export default function BlogEklePage() {
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
         console.error('Non-JSON response:', text);
-        showNotification('error', 'Sunucudan geçersiz yanıt alındı');
+        showNotification('error', t('invalid-server-response'));
         setIsSubmitting(false);
         return;
       }
@@ -188,8 +190,8 @@ export default function BlogEklePage() {
 
       if (response.ok) {
         showNotification('success', editingBlog
-          ? 'Blog başarıyla güncellendi!'
-          : 'Blog başarıyla eklendi!');
+          ? t('blog-successfully-updated')
+          : t('blog-successfully-added'));
 
         // Reset form
         setTitle('');
@@ -212,11 +214,11 @@ export default function BlogEklePage() {
       console.error('Detaylı hata:', error);
 
       if (error instanceof TypeError) {
-        showNotification('error', 'Ağ hatası. Bağlantınızı kontrol edin.');
+        showNotification('error', t('network-error'));
       } else if (error instanceof SyntaxError) {
-        showNotification('error', 'Sunucudan geçersiz yanıt alındı');
+        showNotification('error', t('invalid-server-response'));
       } else {
-        showNotification('error', 'Beklenmedik bir hata oluştu');
+        showNotification('error', t('unexpected-error'));
       }
     } finally {
       setIsSubmitting(false);
@@ -296,13 +298,13 @@ export default function BlogEklePage() {
       });
 
       if (!response.ok) {
-        throw new Error('Blog silinirken bir hata oluştu.');
+        throw new Error(t('error-deleting-blog'));
       }
 
-      showNotification('success', 'Blog başarıyla silindi');
+      showNotification('success', t('blog-successfully-deleted'));
       fetchBlogs(); // Refresh the list
     } catch (error) {
-      showNotification('error', 'Blog silinirken bir hata oluştu2');
+      showNotification('error', t('error-deleting-blog'));
     } finally {
       setDeleteDialogOpen(false);
       setBlogToDelete(null);
@@ -331,41 +333,41 @@ export default function BlogEklePage() {
 
       <div>
         <h1 className="text-3xl font-bold tracking-tight mb-4">
-          {editingBlog ? 'Blog Düzenle' : 'Blog Ekle'}
+          {editingBlog ? t('edit-blog') : t('add-blog')}
         </h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="add">Blog Ekle/Düzenle</TabsTrigger>
-          <TabsTrigger value="list">Blog Listesi</TabsTrigger>
+          <TabsTrigger value="add">{t('add-edit-blog')}</TabsTrigger>
+          <TabsTrigger value="list">{t('blog-list')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="add">
           <Card>
             <CardHeader>
               <CardTitle>
-                {editingBlog ? 'Blog Düzenle' : 'Yeni Blog Girişi'}
+                {editingBlog ? t('edit-blog') : t('new-blog-entry')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-8">
                 <div>
                   <label htmlFor="title" className="block mb-2 font-medium">
-                    Blog Başlığı
+                    {t('blog-title')}
                   </label>
                   <Input
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Blog başlığını giriniz"
+                    placeholder={t('enter-blog-title')}
                     required
                   />
                 </div>
 
                 <div className="quill-editor-container">
                   <label className="block mb-2 font-medium">
-                    İçerik
+                    {t('content')}
                   </label>
                   <ReactQuill
                     ref={quillRef}
@@ -379,7 +381,7 @@ export default function BlogEklePage() {
 
                 <div>
                   <label className="block mb-2 font-medium">
-                    Kapak Fotoğrafı
+                    {t('cover-photo')}
                   </label>
                   <div className="flex items-center space-x-4">
                     <div className="relative w-32 h-32 border-2 border-dashed rounded-lg overflow-hidden">
@@ -408,7 +410,7 @@ export default function BlogEklePage() {
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
                       >
                         <UploadIcon className="w-4 h-4 mr-2" />
-                        Fotoğraf Seç
+                        {t('select-photo')}
                       </label>
                     </div>
                   </div>
@@ -420,7 +422,7 @@ export default function BlogEklePage() {
                     disabled={isSubmitting}
                     className="flex-1"
                   >
-                    {isSubmitting ? 'Kaydediliyor...' : (editingBlog ? 'Güncelle' : 'Kaydet')}
+                    {isSubmitting ? t('saving') : (editingBlog ? t('update') : t('save'))}
                   </Button>
                   {editingBlog && (
                     <Button
@@ -429,7 +431,7 @@ export default function BlogEklePage() {
                       onClick={handleCancelEdit}
                       className="flex-1"
                     >
-                      İptal
+                      {t('cancel')}
                     </Button>
                   )}
                 </div>
@@ -441,7 +443,7 @@ export default function BlogEklePage() {
         <TabsContent value="list">
           <Card>
             <CardHeader>
-              <CardTitle>Blog Listesi</CardTitle>
+              <CardTitle>{t('blog-list')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -451,7 +453,7 @@ export default function BlogEklePage() {
                     <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
                       type="text"
-                      placeholder="Blog başlığına göre ara..."
+                      placeholder={t('search-by-blog-title')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
@@ -468,7 +470,7 @@ export default function BlogEklePage() {
                     ) : (
                       <SortDescIcon className="w-4 h-4 mr-2" />
                     )}
-                    {sortOrder === 'asc' ? 'En Eski' : 'En Yeni'}
+                    {sortOrder === 'asc' ? t('oldest') : t('newest')}
                   </Button>
                 </div>
 
@@ -498,7 +500,7 @@ export default function BlogEklePage() {
                             onClick={() => handleEdit(blog)}
                           >
                             <EditIcon className="w-4 h-4 mr-1" />
-                            Düzenle
+                            {t('edit')}
                           </Button>
                           <Button
                             variant="destructive"
@@ -506,7 +508,7 @@ export default function BlogEklePage() {
                             onClick={() => handleDelete(blog)}
                           >
                             <TrashIcon className="w-4 h-4 mr-1" />
-                            Sil
+                            {t('delete')}
                           </Button>
                         </div>
                       </div>
@@ -523,16 +525,15 @@ export default function BlogEklePage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Blogu Sil</AlertDialogTitle>
+            <AlertDialogTitle>{t('delete-blog')}</AlertDialogTitle>
             <AlertDialogDescription>
-              "{blogToDelete?.title}" başlıklı blogu silmek istediğinize emin misiniz?
-              Bu işlem geri alınamaz.
+              "{blogToDelete?.title}" {t('are-you-sure-delete-blog')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>
-              Sil
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

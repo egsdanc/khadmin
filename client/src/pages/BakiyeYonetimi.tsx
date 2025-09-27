@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,6 +89,7 @@ interface FiltreState {
 }
 
 const BakiyeGecmisi = () => {
+  const { t } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
   const { user } = useAuth();
@@ -134,20 +136,20 @@ const BakiyeGecmisi = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bakiye İşlemleri</CardTitle>
+        <CardTitle>{t('balance-transactions')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tarih</TableHead>
-                <TableHead>Bayi</TableHead>
-                <TableHead className="hidden sm:table-cell">Firma</TableHead>
-                <TableHead className="hidden sm:table-cell">İşlem Detayı</TableHead>
-                <TableHead className="text-right">Tutar</TableHead>
-                <TableHead className="hidden md:table-cell">Açıklama</TableHead>
-                <TableHead className="text-right">Bakiye</TableHead>
+                <TableHead>{t('date')}</TableHead>
+                <TableHead>{t('dealer')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('company')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('transaction-detail')}</TableHead>
+                <TableHead className="text-right">{t('amount')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('description')}</TableHead>
+                <TableHead className="text-right">{t('balance')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -160,7 +162,7 @@ const BakiyeGecmisi = () => {
                         <span>{hareket.bayi_adi}</span>
                         {!hareket.bayi_aktif && (
                           <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20">
-                            Pasif
+                            {t('inactive')}
                           </span>
                         )}
                       </div>
@@ -172,17 +174,17 @@ const BakiyeGecmisi = () => {
                       <div className="space-y-1">
                         {hareket.manuel_yukleme > 0 && (
                           <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-700">
-                            Manuel Bakiye Yükleme
+                            {t('manual-balance-loading')}
                           </span>
                         )}
                         {hareket.iyzico_yukleme > 0 && (
                           <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700">
-                            iyzico Bakiye Yükleme
+                            {t('iyzico-balance-loading')}
                           </span>
                         )}
                         {hareket.sipay_yukleme > 0 && (
                           <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
-                            Sipay Bakiye Yükleme
+                            {t('sipay-balance-loading')}
                           </span>
                         )}
                       </div>
@@ -214,7 +216,7 @@ const BakiyeGecmisi = () => {
                     colSpan={7}
                     className="text-center py-4 text-muted-foreground"
                   >
-                    İşlem bulunamadı
+                    {t('no-transactions-found')}
                   </TableCell>
                 </TableRow>
               )}
@@ -236,6 +238,7 @@ const BakiyeGecmisi = () => {
 };
 
 const OnlineOdemeSipay = () => {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
@@ -470,8 +473,8 @@ const OnlineOdemeSipay = () => {
       });
       toast({
         variant: "destructive",
-        title: "Hata",
-        description: error.message || "Ödeme işlemi başlatılırken bir hata oluştu",
+        title: t('error'),
+        description: error.message || t('error-during-payment-process'),
       });
     } finally {
       setLoading(false);
@@ -481,18 +484,18 @@ const OnlineOdemeSipay = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Online Bakiye Yükleme Sipay</CardTitle>
-        <CardDescription>Sipay güvenli ödeme altyapısı ile bakiye yükleyebilirsiniz </CardDescription>
+        <CardTitle>{t('online-balance-loading-sipay')}</CardTitle>
+        <CardDescription>{t('you-can-load-balance-with-sipay-secure-payment')}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {(user?.role === "Super Admin" || user?.role === "Admin") && (
             <>
               <div className="space-y-2">
-                <Label>Firma</Label>
+                <Label>{t('company')}</Label>
                 <Select value={selectedFirma} onValueChange={(value) => { setSelectedFirma(value); setSelectedBayi(""); }}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Firma Seçiniz" />
+                    <SelectValue placeholder={t('select-company')} />
                   </SelectTrigger>
                   <SelectContent>
                     {firmaResponse?.data?.map(firma => (
@@ -502,26 +505,26 @@ const OnlineOdemeSipay = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Bayi</Label>
+                <Label>{t('dealer')}</Label>
                 <Select value={selectedBayi} onValueChange={setSelectedBayi} disabled={!selectedFirma}>
                   <SelectTrigger>
-                    <SelectValue placeholder={selectedFirma ? "Bayi Seçiniz" : "Önce firma seçiniz"} />
+                    <SelectValue placeholder={selectedFirma ? t('select-dealer') : t('select-company-first')} />
                   </SelectTrigger>
                   <SelectContent>
                     {filteredBayiler.length > 0 ? filteredBayiler.map(bayi => (
                       <SelectItem key={bayi.id} value={bayi.id.toString()}>{bayi.ad}</SelectItem>
-                    )) : <SelectItem value="empty">Bayi bulunamadı</SelectItem>}
+                    )) : <SelectItem value="empty">{t('no-dealers-found')}</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
             </>
           )}
           <div className="space-y-2">
-            <Label>Tutar</Label>
-            <Input id="amount" type="number" placeholder="Tutar giriniz" value={amount} onChange={(e) => setAmount(e.target.value)} min="1" step="0.01" required />
+            <Label>{t('amount')}</Label>
+            <Input id="amount" type="number" placeholder={t('enter-amount')} value={amount} onChange={(e) => setAmount(e.target.value)} min="1" step="0.01" required />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "İşleniyor..." : "Ödeme Yap"}
+            {loading ? t('processing') : t('make-payment')}
           </Button>
         </form>
 
@@ -533,6 +536,7 @@ const OnlineOdemeSipay = () => {
 };
 
 const BakiyeYukle = () => {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedFirma, setSelectedFirma] = useState("");
@@ -562,8 +566,8 @@ const BakiyeYukle = () => {
     },
     onSuccess: () => {
       toast({
-        title: "Başarılı",
-        description: "Bakiye yükleme işlemi başarıyla tamamlandı",
+        title: t('success'),
+        description: t('balance-loading-completed-successfully'),
       });
 
       // Bakiye geçmişini ve diğer ilgili verileri güncelle
@@ -577,9 +581,9 @@ const BakiyeYukle = () => {
     onError: (error: Error) => {
       toast({
         variant: "destructive",
-        title: "Hata",
+        title: t('error'),
         description:
-          error.message || "Bakiye yükleme işlemi sırasında bir hata oluştu",
+          error.message || t('error-during-balance-loading'),
       });
     },
   });
@@ -589,8 +593,8 @@ const BakiyeYukle = () => {
     if (!bayi || !miktar) {
       toast({
         variant: "destructive",
-        title: "Hata",
-        description: "Lütfen tüm alanları doldurun",
+        title: t('error'),
+        description: t('please-fill-all-fields'),
       });
       return;
     }
@@ -599,8 +603,8 @@ const BakiyeYukle = () => {
     if (isNaN(miktar_float) || miktar_float <= 0) {
       toast({
         variant: "destructive",
-        title: "Hata",
-        description: "Geçerli bir miktar giriniz",
+        title: t('error'),
+        description: t('enter-valid-amount'),
       });
       return;
     }
@@ -650,16 +654,16 @@ const BakiyeYukle = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bakiye Yükle</CardTitle>
+        <CardTitle>{t('load-balance')}</CardTitle>
         <CardDescription>
-          Bayi seçerek bakiye yüklemesi yapabilirsiniz
+          {t('you-can-load-balance-by-selecting-dealer')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firma">Firma</Label>
+              <Label htmlFor="firma">{t('company')}</Label>
               <Select
                 value={selectedFirma}
                 onValueChange={(value) => {
@@ -668,7 +672,7 @@ const BakiyeYukle = () => {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Firma Seçiniz" />
+                  <SelectValue placeholder={t('select-company')} />
                 </SelectTrigger>
                 <SelectContent>
                   {firmalar.map((firma) => (
@@ -681,7 +685,7 @@ const BakiyeYukle = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bayi">Bayi</Label>
+              <Label htmlFor="bayi">{t('dealer')}</Label>
               <Select
                 value={bayi}
                 onValueChange={setBayi}
@@ -690,13 +694,13 @@ const BakiyeYukle = () => {
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      selectedFirma ? "Bayi Seçiniz" : "Önce firma seçiniz"
+                      selectedFirma ? t('select-dealer') : t('select-company-first')
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
                   {bayiLoading ? (
-                    <SelectItem value="loading">Yükleniyor...</SelectItem>
+                    <SelectItem value="loading">{t('loading')}</SelectItem>
                   ) : filteredBayiler.length > 0 ? (
                     filteredBayiler.map((b) => (
                       <SelectItem key={b.id} value={b.id.toString()}>
@@ -711,11 +715,11 @@ const BakiyeYukle = () => {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="miktar">Yüklenecek Tutar</Label>
+              <Label htmlFor="miktar">{t('amount-to-load')}</Label>
               <Input
                 id="miktar"
                 type="number"
-                placeholder="Tutar giriniz"
+                placeholder={t('enter-amount')}
                 value={miktar}
                 onChange={(e) => setMiktar(e.target.value)}
                 min="0"
@@ -734,7 +738,7 @@ const BakiyeYukle = () => {
               {bakiyeYukleMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Bakiye Yükle
+              {t('load-balance')}
             </Button>
           </div>
         </form>
@@ -744,6 +748,7 @@ const BakiyeYukle = () => {
 };
 
 const BakiyeYonetimi = () => {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [bayi, setBayi] = useState("");
@@ -775,8 +780,8 @@ const BakiyeYonetimi = () => {
     },
     onSuccess: () => {
       toast({
-        title: "Başarılı",
-        description: "Bakiye yükleme işlemi başarıyla tamamlandı",
+        title: t('success'),
+        description: t('balance-loading-completed-successfully'),
       });
 
       queryClient.invalidateQueries({
@@ -789,9 +794,9 @@ const BakiyeYonetimi = () => {
     onError: (error: Error) => {
       toast({
         variant: "destructive",
-        title: "Hata",
+        title: t('error'),
         description:
-          error.message || "Bakiye yükleme işlemi sırasında bir hata oluştu",
+          error.message || t('error-during-balance-loading'),
       });
     },
   });
@@ -801,8 +806,8 @@ const BakiyeYonetimi = () => {
     if (!bayi || !miktar) {
       toast({
         variant: "destructive",
-        title: "Hata",
-        description: "Lütfen tüm alanları doldurun",
+        title: t('error'),
+        description: t('please-fill-all-fields'),
       });
       return;
     }
@@ -811,8 +816,8 @@ const BakiyeYonetimi = () => {
     if (isNaN(miktar_float) || miktar_float <= 0) {
       toast({
         variant: "destructive",
-        title: "Hata",
-        description: "Geçerli bir miktar giriniz",
+        title: t('error'),
+        description: t('enter-valid-amount'),
       });
       return;
     }
@@ -833,9 +838,9 @@ const BakiyeYonetimi = () => {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Bakiye Yönetimi</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('balance-management')}</h1>
           <p className="text-muted-foreground">
-            Test bazlı bakiye yönetimi sistemi
+            {t('test-based-balance-management-system')}
           </p>
         </div>
       </div>
@@ -854,12 +859,12 @@ const BakiyeYonetimi = () => {
       >
         <TabsList>
           {user?.role === "Admin" || user?.role === "Super Admin" ? (
-            <TabsTrigger value="bakiye-yukle">Bakiye Yükle</TabsTrigger>
+            <TabsTrigger value="bakiye-yukle">{t('load-balance')}</TabsTrigger>
           ) : null}
           {/* <TabsTrigger value="online-odeme">Online Ödeme</TabsTrigger> */}
-          <TabsTrigger value="online-odeme-sipay">Online Ödeme Sipay</TabsTrigger>
+          <TabsTrigger value="online-odeme-sipay">{t('online-payment-sipay')}</TabsTrigger>
 
-          <TabsTrigger value="bakiye-gecmisi">Bakiye Geçmişi</TabsTrigger>
+          <TabsTrigger value="bakiye-gecmisi">{t('balance-history')}</TabsTrigger>
         </TabsList>
 
         {user?.role === "Admin" || user?.role === "Super Admin" ? (
@@ -1077,7 +1082,7 @@ const BakiyeYonetimi = () => {
 //                   <Label>Firma</Label>
 //                   <Select value={selectedFirma} onValueChange={(value) => { setSelectedFirma(value); setSelectedBayi(""); }}>
 //                     <SelectTrigger>
-//                       <SelectValue placeholder="Firma Seçiniz" />
+//                       <SelectValue placeholder={t('select-company')} />
 //                     </SelectTrigger>
 //                     <SelectContent>
 //                       {firmaResponse?.data?.map(firma => (
@@ -1095,7 +1100,7 @@ const BakiyeYonetimi = () => {
 //                     <SelectContent>
 //                       {filteredBayiler.length > 0 ? filteredBayiler.map(bayi => (
 //                         <SelectItem key={bayi.id} value={bayi.id.toString()}>{bayi.ad}</SelectItem>
-//                       )) : <SelectItem value="empty">Bayi bulunamadı</SelectItem>}
+//                       )) : <SelectItem value="empty">{t('no-dealers-found')}</SelectItem>}
 //                     </SelectContent>
 //                   </Select>
 //                 </div>
@@ -1103,10 +1108,10 @@ const BakiyeYonetimi = () => {
 //             )}
 //             <div className="space-y-2">
 //               <Label>Tutar</Label>
-//               <Input id="amount" type="number" placeholder="Tutar giriniz" value={amount} onChange={(e) => setAmount(e.target.value)} min="1" step="0.01" required />
+//               <Input id="amount" type="number" placeholder={t('enter-amount')} value={amount} onChange={(e) => setAmount(e.target.value)} min="1" step="0.01" required />
 //             </div>
 //             <Button type="submit" className="w-full" disabled={loading}>
-//               {loading ? "İşleniyor..." : "Ödeme Yap"}
+//               {loading ? t('processing') : t('make-payment')}
 //             </Button>
 //           </form>
 

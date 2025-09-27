@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { jsPDF } from "jspdf";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface VINTest {
   id: number;
@@ -43,6 +44,7 @@ interface VINDetailsModalProps {
 }
 
 export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProps) {
+  const { t } = useLanguage();
   const { data: response, isLoading } = useQuery<ApiResponse>({
     queryKey: [`/api/vinreader/${testId}`],
     enabled: isOpen && !!testId,
@@ -71,16 +73,16 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
     // Başlık
     doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
-    doc.text("VIN HACKER", doc.internal.pageSize.width / 2, 30, { align: "center" });
+    doc.text(t('vin-hacker').toUpperCase(), doc.internal.pageSize.width / 2, 30, { align: "center" });
 
     // Alt Başlık
     doc.setFontSize(16);
     doc.setFont("helvetica", "normal");
-    doc.text("Test Raporu", doc.internal.pageSize.width / 2, 45, { align: "center" });
+    doc.text(t('test-report'), doc.internal.pageSize.width / 2, 45, { align: "center" });
 
     // Tarih
     doc.setFontSize(10);
-    doc.text(`Test Tarihi: ${formatDate(firstTest.tarih)}`, 20, 60);
+    doc.text(`${t('test-date')}: ${formatDate(firstTest.tarih)}`, 20, 60);
 
     // Firma ve Bayi Bilgileri
     const addText = (text: string, x: number, y: number) => {
@@ -102,10 +104,10 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
     };
 
     // Firma ve Bayi Bilgileri
-    addText("Firma", doc.internal.pageSize.width - 140, 60);
+    addText(t('company'), doc.internal.pageSize.width - 140, 60);
     addText(firstTest.firma_adi || '-', doc.internal.pageSize.width - 140, 65);
 
-    addText("Bayi", doc.internal.pageSize.width - 80, 60);
+    addText(t('dealer'), doc.internal.pageSize.width - 80, 60);
     addText(firstTest.bayi_adi || '-', doc.internal.pageSize.width - 80, 65);
 
     // Araç Bilgileri Kartı
@@ -113,23 +115,23 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
     doc.rect(20, 75, doc.internal.pageSize.width - 40, 50, 'F');
 
     // Araç Bilgileri
-    addText("Plaka", 30, 85);
+    addText(t('plate'), 30, 85);
     addText(firstTest.plaka || '', 30, 90);
 
-    addText("Sase No", 30, 100);
+    addText(t('chassis-number'), 30, 100);
     addText(firstTest.sase || '', 30, 105);
 
-    addText("Motor No", 30, 115);
+    addText(t('engine-number'), 30, 115);
     addText(firstTest.motor || '', 30, 120);
 
     const rightCol = doc.internal.pageSize.width - 80;
-    addText("Marka/Model", rightCol, 85);
+    addText(t('brand-model'), rightCol, 85);
     addText(`${firstTest.marka || ''} ${firstTest.model || ''}`, rightCol, 90);
 
-    addText("Model Yili", rightCol, 100);
+    addText(t('model-year'), rightCol, 100);
     addText(firstTest.yil?.toString() || '', rightCol, 105);
 
-    addText("Kilometre", rightCol, 115);
+    addText(t('kilometre'), rightCol, 115);
     addText(firstTest.gosterge_km?.toString() || '', rightCol, 120);
 
     // Tablo başlangıç pozisyonu
@@ -142,9 +144,9 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
     doc.setFillColor(240, 240, 240);
     doc.rect(margin, tableTop, tableWidth, rowHeight, 'F');
 
-    // Sütun genişlikleri - orijinal genişlikler
-    const modulColWidth = 50; // Modul sütunu için orijinal genişlik
-    const vinColWidth = 50;    // VIN sütunları için orijinal genişlik
+    // Sütun genişlikleri - sayfa genişliğine göre ayarla
+    const modulColWidth = 60; // Modul sütunu için genişlik
+    const vinColWidth = 55;    // VIN sütunları için genişlik
     const modulStart = margin + 5;
     const vin1Start = modulStart + modulColWidth;
     const vin2Start = vin1Start + vinColWidth;
@@ -152,7 +154,7 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
 
     // Başlıklar
     doc.setFont("helvetica", "bold");
-    addText("Modul", modulStart, tableTop + 10);
+    addText(t('module'), modulStart, tableTop + 10);
     addText("VIN1", vin1Start, tableTop + 10);
     addText("VIN2", vin2Start, tableTop + 10);
     addText("VIN3", vin3Start, tableTop + 10);
@@ -169,25 +171,45 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
 
       // Modul ismini çok satırlı olarak göster
       const modulText = test.kontrolmod || '';
-      const maxWidth = modulColWidth - 5; // Sütun genişliği - padding
+      const modulMaxWidth = modulColWidth - 5; // Sütun genişliği - padding
       
       // jsPDF'in splitTextToSize fonksiyonunu kullanarak metni böl
-      const splitText = doc.splitTextToSize(modulText, maxWidth);
+      const splitModul = doc.splitTextToSize(modulText, modulMaxWidth);
       const lineHeight = 4; // Satır arası yükseklik
       
       // Modul ismini çok satırlı olarak yaz
-      splitText.forEach((line: string, index: number) => {
+      splitModul.forEach((line: string, index: number) => {
         addText(line, modulStart, currentY + 10 + (index * lineHeight));
       });
       
-      // VIN değerlerini yaz
-      addText(test.vin1 || '', vin1Start, currentY + 10);
-      addText(test.vin2 || '', vin2Start, currentY + 10);
-      addText(test.vin3 || '', vin3Start, currentY + 10);
+      // VIN değerlerini de çok satırlı olarak göster
+      const vin1Text = test.vin1 || '';
+      const vin2Text = test.vin2 || '';
+      const vin3Text = test.vin3 || '';
+      const vinMaxWidth = vinColWidth - 5; // Sütun genişliği - padding
+      
+      const splitVin1 = doc.splitTextToSize(vin1Text, vinMaxWidth);
+      const splitVin2 = doc.splitTextToSize(vin2Text, vinMaxWidth);
+      const splitVin3 = doc.splitTextToSize(vin3Text, vinMaxWidth);
+      
+      // VIN değerlerini çok satırlı olarak yaz
+      splitVin1.forEach((line: string, index: number) => {
+        addText(line, vin1Start, currentY + 10 + (index * lineHeight));
+      });
+      splitVin2.forEach((line: string, index: number) => {
+        addText(line, vin2Start, currentY + 10 + (index * lineHeight));
+      });
+      splitVin3.forEach((line: string, index: number) => {
+        addText(line, vin3Start, currentY + 10 + (index * lineHeight));
+      });
 
-      // Satır yüksekliğini çok satırlı metne göre ayarla
-      const textHeight = Math.max(splitText.length * lineHeight, 8);
-      currentY += Math.max(rowHeight, textHeight + 2);
+      // Satır yüksekliğini en uzun çok satırlı metne göre ayarla
+      const modulHeight = splitModul.length * lineHeight;
+      const vin1Height = splitVin1.length * lineHeight;
+      const vin2Height = splitVin2.length * lineHeight;
+      const vin3Height = splitVin3.length * lineHeight;
+      const maxTextHeight = Math.max(modulHeight, vin1Height, vin2Height, vin3Height, 8);
+      currentY += Math.max(rowHeight, maxTextHeight + 2);
     });
 
     doc.save(`vin-hacker-${firstTest.plaka}-${formatDate(firstTest.tarih)}.pdf`);
@@ -197,7 +219,7 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>VIN Detayları</DialogTitle>
+          <DialogTitle>{t('vin-hacker')} {t('details')}</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
@@ -208,43 +230,43 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
           <div className="space-y-6">
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Araç Bilgileri</h3>
+                <h3 className="text-lg font-semibold mb-4">{t('vehicle-information')}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4"> {/* Changed to lg:grid-cols-2 */}
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Test Tarihi</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('test-date')}</p>
                     <p className="mt-1">{formatDate(firstTest.tarih)}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Plaka</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('plate')}</p>
                     <p className="mt-1">{firstTest.plaka}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Şase No</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('chassis-number')}</p>
                     <p className="mt-1">{firstTest.sase}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Motor No</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('engine-number')}</p>
                     <p className="mt-1">{firstTest.motor}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Marka/Model</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('brand-model')}</p>
                     <p className="mt-1">{firstTest.marka} {firstTest.model}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Model Yılı</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('model-year')}</p>
                     <p className="mt-1">{firstTest.yil}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Gösterge KM</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('odometer-km')}</p>
                     <p className="mt-1">{firstTest.gosterge_km}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Ücret</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('fee')}</p>
                     <p className="mt-1">{firstTest.ucret}</p>
                   </div>
                   {firstTest.aciklama && (
                     <div className="col-span-full">
-                      <p className="text-sm font-medium text-muted-foreground">Açıklama</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('description')}</p>
                       <p className="mt-1">{firstTest.aciklama}</p>
                     </div>
                   )}
@@ -254,9 +276,9 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
 
             <div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
-                <h3 className="text-lg font-semibold">VIN Detayları</h3>
+                <h3 className="text-lg font-semibold">{t('vin-hacker')} {t('details')}</h3>
                 <Button variant="outline" onClick={generatePDF}>
-                  PDF İndir
+                  {t('download-pdf')}
                 </Button>
               </div>
 
@@ -284,7 +306,7 @@ export function VINDetailsModal({ isOpen, onClose, testId }: VINDetailsModalProp
           </div>
         ) : (
           <div className="p-4 text-center text-muted-foreground">
-            Test detayları yüklenemedi
+{t('test-details-could-not-be-loaded')}
           </div>
         )}
       </DialogContent>

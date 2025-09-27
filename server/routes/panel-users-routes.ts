@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db } from "../services/database-service";
+import { requireAuth } from "../auth";
 
 const router = Router();
 
@@ -375,6 +376,39 @@ router.delete("/:id", async (req, res) => {
       success: false,
       message: "Kullanıcı silinirken bir hata oluştu: " + (error as Error).message
     });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+// Dil tercihini güncelle
+router.put("/language", requireAuth, async (req, res) => {
+  let connection;
+  try {
+    const { language } = req.body;
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    
+    if (!language || !['tr', 'en'].includes(language)) {
+      return res.status(400).json({ success: false, message: 'Invalid language' });
+    }
+    
+    connection = await db.getConnection();
+    
+    await connection.execute(
+      'UPDATE panel_users SET language_preference = ? WHERE id = ?',
+      [language, userId]
+    );
+    
+    res.json({ success: true, message: 'Language preference updated' });
+  } catch (error) {
+    console.error('Language update error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   } finally {
     if (connection) {
       connection.release();

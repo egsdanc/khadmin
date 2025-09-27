@@ -8,8 +8,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LocationSettings from "./LocationSettings";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function AyarlarPage() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -23,8 +25,8 @@ export default function AyarlarPage() {
     if (newPassword !== confirmPassword) {
       toast({
         variant: "destructive",
-        title: "Hata",
-        description: "Yeni şifreler eşleşmiyor",
+        title: t('error'),
+        description: t('passwords-do-not-match'),
       });
       return;
     }
@@ -47,8 +49,8 @@ export default function AyarlarPage() {
       }
 
       toast({
-        title: "Başarılı",
-        description: "Şifreniz başarıyla güncellendi",
+        title: t('success'),
+        description: t('password-updated-successfully'),
       });
 
       setCurrentPassword("");
@@ -57,8 +59,8 @@ export default function AyarlarPage() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Hata",
-        description: error instanceof Error ? error.message : "Şifre değiştirme işlemi başarısız oldu",
+        title: t('error'),
+        description: error instanceof Error ? error.message : t('error-updating-password'),
       });
     } finally {
       setIsLoading(false);
@@ -68,39 +70,39 @@ export default function AyarlarPage() {
   return (
     <div className="space-y-6 p-4 sm:p-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Ayarlar</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('settings')}</h1>
         <p className="text-muted-foreground">
-          Hesap ayarlarınızı buradan yönetebilirsiniz
+          {t('manage-account-settings')}
         </p>
       </div>
 
       <Tabs defaultValue="hesap" className="space-y-6">
         <TabsList className="w-full sm:w-auto">
-          <TabsTrigger value="hesap" className="flex-1 sm:flex-none">Hesap Ayarları</TabsTrigger>
+          <TabsTrigger value="hesap" className="flex-1 sm:flex-none">{t('account-settings')}</TabsTrigger>
           {(user?.role ===  "Super Admin" || user?.role === "Admin") && (
-                    <TabsTrigger value="lokasyon" className="flex-1 sm:flex-none">Lokasyon Yönetimi</TabsTrigger>
+                    <TabsTrigger value="lokasyon" className="flex-1 sm:flex-none">{t('location-management')}</TabsTrigger>
           )}
         </TabsList>
 
         <TabsContent value="hesap" className="space-y-6">
           <Card>
             <CardHeader className="px-6">
-              <CardTitle>Profil Bilgileri</CardTitle>
+              <CardTitle>{t('profile-information')}</CardTitle>
               <CardDescription>
-                Hesabınızla ilgili temel bilgiler
+                {t('basic-account-information')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 px-6">
               <div className="grid gap-2">
-                <Label>Ad Soyad</Label>
+                <Label>{t('full-name')}</Label>
                 <Input value={user?.name} disabled />
               </div>
               <div className="grid gap-2">
-                <Label>E-posta</Label>
+                <Label>{t('email')}</Label>
                 <Input value={user?.email} disabled />
               </div>
               <div className="grid gap-2">
-                <Label>Rol</Label>
+                <Label>{t('role')}</Label>
                 <Input value={user?.role} disabled />
               </div>
             </CardContent>
@@ -108,15 +110,15 @@ export default function AyarlarPage() {
 
           <Card>
             <CardHeader className="px-6">
-              <CardTitle>Şifre Değiştir</CardTitle>
+              <CardTitle>{t('change-password')}</CardTitle>
               <CardDescription>
-                Hesabınızın şifresini güncelleyin
+                {t('update-account-password')}
               </CardDescription>
             </CardHeader>
             <CardContent className="px-6">
               <form onSubmit={handlePasswordChange} className="space-y-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="currentPassword">Mevcut Şifre</Label>
+                  <Label htmlFor="currentPassword">{t('current-password')}</Label>
                   <Input
                     id="currentPassword"
                     type="password"
@@ -126,7 +128,7 @@ export default function AyarlarPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="newPassword">Yeni Şifre</Label>
+                  <Label htmlFor="newPassword">{t('new-password')}</Label>
                   <Input
                     id="newPassword"
                     type="password"
@@ -136,7 +138,7 @@ export default function AyarlarPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="confirmPassword">Yeni Şifre (Tekrar)</Label>
+                  <Label htmlFor="confirmPassword">{t('confirm-new-password')}</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -147,7 +149,7 @@ export default function AyarlarPage() {
                 </div>
                 <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Şifreyi Güncelle
+                  {t('update-password')}
                 </Button>
               </form>
             </CardContent>

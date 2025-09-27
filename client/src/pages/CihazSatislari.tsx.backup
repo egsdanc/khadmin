@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
-import { DateRange } from "react-day-picker";
 import {
   Card,
   CardContent,
@@ -103,7 +101,7 @@ const formSchema = z.object({
 });
 
 export default function CihazSatislari() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
@@ -408,7 +406,7 @@ export default function CihazSatislari() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingId ? t('edit-device-sale') : t('new-device-sale')}</DialogTitle>
+              <DialogTitle>{t('new-device-sale')}</DialogTitle>
               <DialogDescription>
                 {t('enter-device-sale-information')}
               </DialogDescription>
@@ -532,14 +530,9 @@ export default function CihazSatislari() {
                       <FormItem>
                         <FormLabel>{t('payment-date')}</FormLabel>
                         <FormControl>
-                          <DatePickerWithRange
-                            selected={field.value ? { from: new Date(field.value), to: new Date(field.value) } : undefined}
-                            onSelect={(range) => {
-                              if (range?.from) {
-                                field.onChange(range.from.toISOString().split('T')[0]);
-                              }
-                            }}
-                            singleDate={true}
+                          <Input
+                            type="date"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -554,14 +547,9 @@ export default function CihazSatislari() {
                       <FormItem>
                         <FormLabel>{t('remaining-payment-date')}</FormLabel>
                         <FormControl>
-                          <DatePickerWithRange
-                            selected={field.value ? { from: new Date(field.value), to: new Date(field.value) } : undefined}
-                            onSelect={(range) => {
-                              if (range?.from) {
-                                field.onChange(range.from.toISOString().split('T')[0]);
-                              }
-                            }}
-                            singleDate={true}
+                          <Input
+                            type="date"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -586,7 +574,7 @@ export default function CihazSatislari() {
                     name="prim_yuzdesi"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="whitespace-nowrap">{t('commission-percentage-short')}</FormLabel>
+                        <FormLabel>{t('commission-percentage')} (%)</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -819,7 +807,7 @@ export default function CihazSatislari() {
               <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
                 <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-indigo-900">{t('total-amount')}</CardTitle>
+                    <CardTitle className="text-sm font-medium text-indigo-900">Toplam Tutar</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-indigo-700">
@@ -831,7 +819,7 @@ export default function CihazSatislari() {
                 </Card>
                 <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-green-900">{t('paid-amount')}</CardTitle>
+                    <CardTitle className="text-sm font-medium text-green-900">Ödenen Tutar</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-700">
@@ -843,7 +831,7 @@ export default function CihazSatislari() {
                 </Card>
                 <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-amber-900">{t('remaining-amount')}</CardTitle>
+                    <CardTitle className="text-sm font-medium text-amber-900">Kalan Tutar</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-amber-700">
@@ -855,7 +843,7 @@ export default function CihazSatislari() {
                 </Card>
                 <Card className="bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-pink-900">{t('total-commission')}</CardTitle>
+                    <CardTitle className="text-sm font-medium text-pink-900">Toplam Prim</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-pink-700">

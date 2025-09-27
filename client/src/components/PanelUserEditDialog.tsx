@@ -23,6 +23,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Company {
   id: number;
@@ -50,16 +51,18 @@ interface User {
   bayi_name?: string;
   role: string;
   status: string;
+  language_preference: string;
 }
 
 const formSchema = z.object({
-  name: z.string().min(1, "Ad Soyad zorunludur"),
-  email: z.string().email("Geçerli bir e-posta adresi giriniz"),
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Please enter a valid email address"),
   password: z.string().optional(),
   firma_id: z.number().nullable(),
   bayi_id: z.number().nullable(),
   role: z.string(),
-  status: z.string()
+  status: z.string(),
+  language_preference: z.string()
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -77,10 +80,12 @@ const defaultValues: FormValues = {
   firma_id: null,
   bayi_id: null,
   role: "Bayi",
-  status: "active"
+  status: "active",
+  language_preference: "tr"
 };
 
 export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,7 +131,8 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
         firma_id: user.firma_id,
         bayi_id: user.bayi_id,
         role: user.role || "Bayi",
-        status: user.status || "active"
+        status: user.status || "active",
+        language_preference: user.language_preference || "tr"
       });
     } else {
       // Modal açıldığında ve ekleme modundaysa varsayılan değerlere sıfırla
@@ -169,15 +175,15 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/panel-users'] });
       toast({
-        title: "Başarılı",
-        description: user?.id ? "Kullanıcı başarıyla güncellendi" : "Kullanıcı başarıyla eklendi",
+        title: t('success'),
+        description: user?.id ? t('user-updated-successfully') : t('user-added-successfully'),
       });
       onOpenChange(false);
     },
     onError: (error) => {
       toast({
-        title: "Hata",
-        description: error instanceof Error ? error.message : "İşlem başarısız oldu",
+        title: t('error'),
+        description: error instanceof Error ? error.message : t('operation-failed'),
         variant: "destructive",
       });
     },
@@ -196,9 +202,9 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Panel Kullanıcı {user?.id ? 'Düzenle' : 'Ekle'}</DialogTitle>
+          <DialogTitle>{t('panel-user')} {user?.id ? t('edit') : t('add')}</DialogTitle>
           <DialogDescription>
-            Panel kullanıcısı için gerekli bilgileri eksiksiz doldurun.
+            {t('fill-required-information-for-panel-user')}
           </DialogDescription>
         </DialogHeader>
 
@@ -209,7 +215,7 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
               name="firma_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Firma</FormLabel>
+                  <FormLabel>{t('company')}</FormLabel>
                   <Select
                     onValueChange={(value) => {
                       const newFirmaId = value === "none" ? null : parseInt(value);
@@ -220,11 +226,11 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
                   >
                     <FormControl>
                       <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Firma Seçiniz" />
+                        <SelectValue placeholder={t('select-company')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="max-h-[160px] overflow-y-auto">
-                      <SelectItem value="none">Firma Seçiniz</SelectItem>
+                      <SelectItem value="none">{t('select-company')}</SelectItem>
                       {companies.map((company) => (
                         <SelectItem key={company.id} value={company.id.toString()}>
                           {company.name} ({company.firma_unvan})
@@ -242,7 +248,7 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
               name="bayi_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bayi</FormLabel>
+                  <FormLabel>{t('dealer')}</FormLabel>
                   <Select
                     onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
                     value={field.value?.toString()}
@@ -250,7 +256,7 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
                   >
                     <FormControl>
                       <SelectTrigger className="h-9">
-                        <SelectValue placeholder={selectedFirmaId ? "Bayi Seçiniz" : "Önce firma seçiniz"} />
+                        <SelectValue placeholder={selectedFirmaId ? t('select-dealer') : t('select-company-first')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="max-h-[140px] overflow-y-auto">
@@ -271,7 +277,7 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Ad Soyad</FormLabel>
+                  <FormLabel>{t('full-name')}</FormLabel>
                   <FormControl>
                     <Input {...field} className="h-9" />
                   </FormControl>
@@ -285,7 +291,7 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>E-posta</FormLabel>
+                  <FormLabel>{t('email')}</FormLabel>
                   <FormControl>
                     <Input type="email" {...field} className="h-9" />
                   </FormControl>
@@ -300,7 +306,7 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Şifre {user?.id && "(Boş bırakılırsa değişmez)"}
+                    {t('password')} {user?.id && `(${t('leave-empty-to-keep-current')})`}
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -321,11 +327,11 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Rol</FormLabel>
+                    <FormLabel>{t('role')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Rol Seçiniz" />
+                          <SelectValue placeholder={t('select-role')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -344,16 +350,41 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Durum</FormLabel>
+                    <FormLabel>{t('status')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Durum Seçiniz" />
+                          <SelectValue placeholder={t('select-status')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="active">Aktif</SelectItem>
-                        <SelectItem value="inactive">Pasif</SelectItem>
+                        <SelectItem value="active">{t('active')}</SelectItem>
+                        <SelectItem value="inactive">{t('inactive')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {/* Dil Seçeneği */}
+            <div className="grid grid-cols-1 gap-4">
+              <FormField
+                control={form.control}
+                name="language_preference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('language-preference')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder={t('select-language')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="tr">🇹🇷 Türkçe</SelectItem>
+                        <SelectItem value="en">🇺🇸 English</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -369,11 +400,11 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
                 onClick={() => onOpenChange(false)}
                 className="h-9"
               >
-                İptal
+                {t('cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting} className="h-9">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Kaydet
+                {t('save')}
               </Button>
             </DialogFooter>
           </form>

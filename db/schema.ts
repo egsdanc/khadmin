@@ -139,6 +139,7 @@ export const panel_users = mysqlTable("panel_users", {
     sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`,
   ),
   deleted_at: timestamp("deleted_at"),
+  language_preference: varchar("language_preference", { length: 5 }).default("tr"),
 });
 
 export const bayiler = mysqlTable("bayiler", {

@@ -30,6 +30,7 @@ import { PlusCircle, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight } from "
 import { useState, useEffect } from "react";
 import { PanelUserEditDialog } from "./PanelUserEditDialog";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 
 interface PanelUser {
@@ -43,6 +44,7 @@ interface PanelUser {
   bayi_name: string | null;
   role: string;
   status: string;
+  language_preference: string;
 }
 
 interface ApiResponse {
@@ -57,6 +59,7 @@ interface ApiResponse {
 }
 
 export default function PanelUserList() {
+  const { t } = useLanguage();
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<PanelUser | null>(null);
@@ -99,7 +102,7 @@ export default function PanelUserList() {
       });
 
       if (!response.ok) {
-        throw new Error("API isteği başarısız oldu");
+        throw new Error(t('api-request-failed'));
       }
 
       const data = await response.json();
@@ -122,15 +125,15 @@ export default function PanelUserList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/panel-users"] });
       toast({
-        title: "Başarılı",
-        description: "Kullanıcı başarıyla silindi",
+        title: t('success'),
+        description: t('user-deleted-successfully'),
       });
       setIsDeleteDialogOpen(false);
     },
     onError: (error) => {
       toast({
-        title: "Hata",
-        description: error instanceof Error ? error.message : "Kullanıcı silinirken bir hata oluştu",
+        title: t('error'),
+        description: error instanceof Error ? error.message : t('error-deleting-user'),
         variant: "destructive",
       });
     },
@@ -142,7 +145,7 @@ export default function PanelUserList() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="flex gap-2 col-span-1 sm:col-span-2">
           <Input
-            placeholder="İsim veya e-posta ile ara..."
+            placeholder={t('search-by-name-or-email')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="flex-1"
@@ -157,10 +160,10 @@ export default function PanelUserList() {
             }}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Rol Seç" />
+              <SelectValue placeholder={t('select-role')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tüm Roller</SelectItem>
+              <SelectItem value="all">{t('all-roles')}</SelectItem>
               <SelectItem value="Super Admin">Super Admin</SelectItem>
               <SelectItem value="Admin">Admin</SelectItem>
               <SelectItem value="Bayi">Bayi</SelectItem>
@@ -176,12 +179,12 @@ export default function PanelUserList() {
             }}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Durum Seç" />
+              <SelectValue placeholder={t('select-status')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tümü</SelectItem>
-              <SelectItem value="active">Aktif</SelectItem>
-              <SelectItem value="inactive">Pasif</SelectItem>
+              <SelectItem value="all">{t('all')}</SelectItem>
+              <SelectItem value="active">{t('active')}</SelectItem>
+              <SelectItem value="inactive">{t('inactive')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -194,7 +197,7 @@ export default function PanelUserList() {
             className="w-full sm:w-auto justify-center"
           >
             <PlusCircle className="h-4 w-4 mr-2" />
-            Kullanıcı Ekle
+            {t('add-user')}
           </Button>
         </div>
       </div>
@@ -210,14 +213,15 @@ export default function PanelUserList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[50px]">No</TableHead>
-                <TableHead>Ad</TableHead>
-                <TableHead className="hidden md:table-cell">E-posta</TableHead>
-                <TableHead className="hidden lg:table-cell">Firma</TableHead>
-                <TableHead className="hidden xl:table-cell">Bayi</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead className="hidden sm:table-cell">Durum</TableHead>
-                <TableHead className="text-right">İşlemler</TableHead>
+                <TableHead className="w-[50px]">{t('no')}</TableHead>
+                <TableHead>{t('name')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('email')}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t('company')}</TableHead>
+                <TableHead className="hidden xl:table-cell">{t('dealer')}</TableHead>
+                <TableHead>{t('role')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('status')}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t('language')}</TableHead>
+                <TableHead className="text-right">{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -268,7 +272,12 @@ export default function PanelUserList() {
                             : "bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20"
                         }`}
                       >
-                        {user.status === "active" ? "Aktif" : "Pasif"}
+                        {user.status === "active" ? t('active') : t('inactive')}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20">
+                        {(user.language_preference || 'tr') === 'en' ? '🇺🇸 English' : '🇹🇷 Türkçe'}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -307,8 +316,8 @@ export default function PanelUserList() {
                     {debouncedSearchTerm ||
                     formData.role !== "all" ||
                     formData.status !== "all"
-                      ? "Arama kriterlerine uygun kullanıcı bulunamadı."
-                      : "Kullanıcı bulunamadı."}
+                      ? t('no-users-found-matching-criteria')
+                      : t('no-users-found')}
                   </TableCell>
                 </TableRow>
               )}
@@ -320,7 +329,7 @@ export default function PanelUserList() {
         {response?.data && response.data.length > 0 && response.pagination && (
           <div className="flex items-center justify-between p-4 border-t">
             <div className="text-sm text-muted-foreground">
-              Toplam {response.pagination.total} kayıt ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, response.pagination.total)} arası)
+              {t('total')} {response.pagination.total} {t('records')} ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, response.pagination.total)} {t('range')})
             </div>
             <div className="flex gap-2">
               <Button
@@ -330,7 +339,7 @@ export default function PanelUserList() {
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className="h-4 w-4 mr-1" />
-                Önceki
+                {t('previous')}
               </Button>
               <div className="flex items-center gap-1">
                 {(() => {
@@ -386,7 +395,7 @@ export default function PanelUserList() {
                 onClick={() => setCurrentPage(prev => Math.min(response.pagination.totalPages, prev + 1))}
                 disabled={currentPage === response.pagination.totalPages}
               >
-                Sonraki
+                {t('next')}
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -404,14 +413,13 @@ export default function PanelUserList() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Kullanıcıyı Sil</AlertDialogTitle>
+            <AlertDialogTitle>{t('delete-user')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri
-              alınamaz.
+              {t('delete-user-confirmation')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
@@ -420,7 +428,7 @@ export default function PanelUserList() {
                 }
               }}
             >
-              Sil
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

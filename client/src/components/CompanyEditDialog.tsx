@@ -20,17 +20,18 @@ import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const companySchema = z.object({
-  name: z.string().min(1, "Firma adı zorunludur"),
-  firma_unvan: z.string().min(1, "Firma ünvanı zorunludur"),
-  email: z.string().email("Geçerli bir email adresi giriniz"),
-  telefon: z.string().min(1, "Telefon numarası zorunludur"),
-  vergi_dairesi: z.string().min(1, "Vergi dairesi zorunludur"),
+  name: z.string().min(1, "Company name is required"),
+  firma_unvan: z.string().min(1, "Company title is required"),
+  email: z.string().email("Please enter a valid email address"),
+  telefon: z.string().min(1, "Phone number is required"),
+  vergi_dairesi: z.string().min(1, "Tax office is required"),
   vergi_no: z.string().optional(),
   tc_no: z.string().optional(),
-  adres: z.string().min(1, "Adres zorunludur"),
-  iban: z.string().min(1, "IBAN zorunludur"),
+  adres: z.string().min(1, "Address is required"),
+  iban: z.string().min(1, "IBAN is required"),
   durum: z.enum(["active", "inactive"]).default("active"),
 });
 
@@ -62,6 +63,7 @@ interface CompanyEditDialogProps {
 }
 
 export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDialogProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -115,19 +117,19 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
       });
 
       if (!response.ok) {
-        throw new Error("Firma güncellenirken bir hata oluştu");
+        throw new Error(t('error-updating-company'));
       }
 
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
-      toast({ title: "Başarılı", description: "Firma başarıyla güncellendi" });
+      toast({ title: t('success'), description: t('company-updated-successfully') });
       onOpenChange(false);
     },
     onError: (error) => {
       toast({ 
-        title: "Hata", 
+        title: t('error'), 
         description: error.message,
         variant: "destructive",
       });
@@ -142,7 +144,7 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Firma Düzenle</DialogTitle>
+          <DialogTitle>{t('edit-company')}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -153,7 +155,7 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Firma Adı</FormLabel>
+                    <FormLabel>{t('company-name')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -167,7 +169,7 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
                 name="firma_unvan"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Firma Ünvanı</FormLabel>
+                    <FormLabel>{t('company-title')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -181,7 +183,7 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>E-posta</FormLabel>
+                    <FormLabel>{t('email')}</FormLabel>
                     <FormControl>
                       <Input type="email" {...field} />
                     </FormControl>
@@ -195,7 +197,7 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
                 name="telefon"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Telefon</FormLabel>
+                    <FormLabel>{t('phone')}</FormLabel>
                     <FormControl>
                       <Input {...field} maxLength={20} />
                     </FormControl>
@@ -209,7 +211,7 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
                 name="adres"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Adres</FormLabel>
+                    <FormLabel>{t('address')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -223,7 +225,7 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
                 name="vergi_dairesi"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vergi Dairesi</FormLabel>
+                    <FormLabel>{t('tax-office')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -237,7 +239,7 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
                 name="vergi_no"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vergi Numarası</FormLabel>
+                    <FormLabel>{t('tax-number')}</FormLabel>
                     <FormControl>
                       <Input {...field} maxLength={50} />
                     </FormControl>
@@ -251,7 +253,7 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
                 name="tc_no"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>TC Kimlik No</FormLabel>
+                    <FormLabel>{t('tc-number')}</FormLabel>
                     <FormControl>
                       <Input {...field} maxLength={20} />
                     </FormControl>
@@ -265,7 +267,7 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
                 name="iban"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>IBAN</FormLabel>
+                    <FormLabel>{t('iban')}</FormLabel>
                     <FormControl>
                       <Input {...field} maxLength={50} />
                     </FormControl>
@@ -277,10 +279,10 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
 
             <div className="flex justify-end gap-4 mt-6">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                İptal
+                {t('cancel')}
               </Button>
               <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "Güncelleniyor..." : "Güncelle"}
+                {updateMutation.isPending ? t('updating') : t('update')}
               </Button>
             </div>
           </form>

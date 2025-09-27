@@ -10,8 +10,10 @@ import { User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function UserMenu() {
+  const { t } = useLanguage();
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
 
@@ -55,11 +57,11 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setLocation("/profil")}>
           <User className="mr-2 h-4 w-4" />
-          <span>Profil</span>
+          <span>{t('profile')}</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Çıkış Yap</span>
+          <span>{t('logout')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

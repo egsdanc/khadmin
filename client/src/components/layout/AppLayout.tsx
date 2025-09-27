@@ -11,8 +11,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, Menu, User, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import React from 'react';
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
+  const { t } = useLanguage();
   const { logout } = useAuth();
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -58,18 +60,18 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 <Link href="/profile">
                   <DropdownMenuItem className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
-                    Profil
+                    {t('profile')}
                   </DropdownMenuItem>
                 </Link>
                 <Link href="/ayarlar">
                   <DropdownMenuItem className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
-                    Ayarlar
+                    {t('settings')}
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Çıkış Yap
+                  {t('logout')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

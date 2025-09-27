@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -50,6 +51,7 @@ interface BayiEditDialogProps {
 }
 
 export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<BayiFormData>({
     ad: '',
     firma: 0,
@@ -161,7 +163,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || 'Bayi işlemi başarısız oldu');
+        throw new Error(errorText || t('dealer-operation-failed'));
       }
 
       return response.json();
@@ -169,7 +171,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bayiler"] });
       toast({
-        description: bayi?.id ? "Bayi başarıyla güncellendi" : "Bayi başarıyla eklendi",
+        description: bayi?.id ? t('dealer-updated-successfully') : t('dealer-added-successfully'),
       });
       onOpenChange(false);
     },
@@ -177,8 +179,8 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
       console.error('Bayi işlem hatası:', error);
       toast({
         variant: "destructive",
-        title: "Hata",
-        description: `İşlem başarısız: ${error.message}`,
+        title: t('error'),
+        description: `${t('operation-failed')}: ${error.message}`,
       });
     },
   });
@@ -210,14 +212,14 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle>{bayi?.id ? 'Bayi Düzenle' : 'Yeni Bayi Ekle'}</DialogTitle>
+            <DialogTitle>{bayi?.id ? t('edit-dealer') : t('add-new-dealer')}</DialogTitle>
             <DialogDescription>
-              Bayi bilgilerini eksiksiz doldurunuz
+              {t('fill-dealer-info-completely')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-center p-6">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">Yükleniyor...</span>
+            <span className="ml-2">{t('loading')}</span>
           </div>
         </DialogContent>
       </Dialog>
@@ -229,16 +231,16 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
       <DialogContent className="sm:max-w-[700px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{bayi?.id ? 'Bayi Düzenle' : 'Yeni Bayi Ekle'}</DialogTitle>
+            <DialogTitle>{bayi?.id ? t('edit-dealer') : t('add-new-dealer')}</DialogTitle>
             <DialogDescription>
-              Bayi bilgilerini eksiksiz doldurunuz
+              {t('fill-dealer-info-completely')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-6 py-4">
             <div className="space-y-4">
               <div>
-                <Label htmlFor="ad">Bayi Adı</Label>
+                <Label htmlFor="ad">{t('dealer-name')}</Label>
                 <Input
                   id="ad"
                   value={formData.ad}
@@ -248,13 +250,13 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
               </div>
 
               <div>
-                <Label htmlFor="firma">Firma</Label>
+                <Label htmlFor="firma">{t('company')}</Label>
                 <Select
                   value={formData.firma ? formData.firma.toString() : ""}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, firma: parseInt(value, 10) }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Firma Seçiniz" />
+                    <SelectValue placeholder={t('select-company')} />
                   </SelectTrigger>
                   <SelectContent>
                     {firmalar?.map((firma) => (
@@ -267,7 +269,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
               </div>
 
               <div>
-                <Label htmlFor="tel">Telefon</Label>
+                <Label htmlFor="tel">{t('phone')}</Label>
                 <Input
                   id="tel"
                   value={formData.tel}
@@ -276,7 +278,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
               </div>
 
               <div>
-                <Label htmlFor="mail">E-posta</Label>
+                <Label htmlFor="mail">{t('email')}</Label>
                 <Input
                   id="mail"
                   type="email"
@@ -286,7 +288,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="vergi_dairesi">Vergi Dairesi</Label>
+                  <Label htmlFor="vergi_dairesi">{t('tax-office')}</Label>
                   <Input
                     id="vergi_dairesi"
                     value={formData.vergi_dairesi}
@@ -295,7 +297,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
                 </div>
 
                 <div>
-                  <Label htmlFor="vergi_no">Vergi No</Label>
+                  <Label htmlFor="vergi_no">{t('tax-number')}</Label>
                   <Input
                     id="vergi_no"
                     value={formData.vergi_no}
@@ -305,7 +307,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
               </div>
 
               <div>
-                <Label htmlFor="adres">Adres</Label>
+                <Label htmlFor="adres">{t('address')}</Label>
                 <Input
                   id="adres"
                   value={formData.adres}
@@ -316,7 +318,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
 
             <div className="space-y-4">
               <div>
-                <Label htmlFor="il">İl</Label>
+                <Label htmlFor="il">{t('city')}</Label>
                 <Select
                   value={formData.il}
                   onValueChange={(value) => {
@@ -324,7 +326,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="İl Seçiniz" />
+                    <SelectValue placeholder={t('select-city')} />
                   </SelectTrigger>
                   <SelectContent>
                     {ilIlceData?.map((il) => (
@@ -337,7 +339,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
               </div>
 
               <div>
-                <Label htmlFor="ilce">İlçe</Label>
+                <Label htmlFor="ilce">{t('district')}</Label>
                 <Select
                   value={formData.ilce}
                   onValueChange={(value) => {
@@ -348,10 +350,10 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
                   <SelectTrigger>
                     <SelectValue placeholder={
                       !formData.il
-                        ? "Önce il seçiniz"
+                        ? t('select-city-first')
                         : !ilceler.length
-                          ? "İlçe bulunamadı"
-                          : "İlçe Seçiniz"
+                          ? t('no-districts-found')
+                          : t('select-district')
                     } />
                   </SelectTrigger>
                   <SelectContent>
@@ -365,7 +367,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
               </div>
 
               <div>
-                <Label htmlFor="bayi_oran">Bayi Oranı (%)</Label>
+                <Label htmlFor="bayi_oran">{t('dealer-rate')} (%)</Label>
                 <Input
                   id="bayi_oran"
                   type="number"
@@ -381,17 +383,17 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
               </div>
 
               <div>
-                <Label htmlFor="aktif">Durum</Label>
+                <Label htmlFor="aktif">{t('status')}</Label>
                 <Select
                   value={formData.aktif.toString()}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, aktif: parseInt(value, 10) }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Durum Seçiniz" />
+                    <SelectValue placeholder={t('select-status')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Aktif</SelectItem>
-                    <SelectItem value="0">Pasif</SelectItem>
+                    <SelectItem value="1">{t('active')}</SelectItem>
+                    <SelectItem value="0">{t('inactive')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -400,15 +402,15 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
 
           <DialogFooter>
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
-              İptal
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Kaydediliyor...
+                  {t('saving')}
                 </>
-              ) : 'Kaydet'}
+              ) : t('save')}
             </Button>
           </DialogFooter>
         </form>

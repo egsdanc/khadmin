@@ -31,6 +31,7 @@ import { useState, useEffect } from "react";
 import { BayiEditDialog } from "./BayiEditDialog";
 import { useToast } from "@/hooks/use-toast";
 import { TablePagination } from "./TablePagination";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Bayi {
   id: number;
@@ -60,6 +61,7 @@ interface ApiResponse {
 }
 
 export function BayiList() {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -109,7 +111,7 @@ export function BayiList() {
 
       const response = await fetch(`/api/bayiler?${params}`);
       if (!response.ok) {
-        throw new Error('API isteği başarısız oldu');
+        throw new Error(t('api-request-failed'));
       }
       const data = await response.json();
       console.log('API Response:', data);
@@ -124,7 +126,7 @@ export function BayiList() {
     queryFn: async () => {
       const response = await fetch("/api/companies");
       if (!response.ok) {
-        throw new Error('Firma listesi alınamadı');
+        throw new Error(t('error-loading-companies'));
       }
       return response.json();
     }
@@ -136,22 +138,22 @@ export function BayiList() {
         method: "DELETE"
       });
       if (!response.ok) {
-        throw new Error('Bayi silme işlemi başarısız oldu');
+        throw new Error(t('error-deleting-dealer'));
       }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bayiler'] });
       toast({
-        description: "Bayi başarıyla silindi",
+        description: t('dealer-deleted-successfully'),
       });
       setIsDeleteDialogOpen(false);
     },
     onError: (error) => {
       toast({
         variant: "destructive",
-        title: "Hata",
-        description: error instanceof Error ? error.message : "Bayi silinirken bir hata oluştu",
+        title: t('error'),
+        description: error instanceof Error ? error.message : t('error-deleting-dealer'),
       });
     },
   });
@@ -175,7 +177,7 @@ export function BayiList() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="relative flex-1">
           <Input
-            placeholder="İsim veya iletişim bilgileri ile ara..."
+            placeholder={t('search-by-name-or-contact')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-full"
@@ -190,12 +192,12 @@ export function BayiList() {
           }}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Durum Seçin" />
+            <SelectValue placeholder={t('select-status')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tümü</SelectItem>
-            <SelectItem value="aktif">Aktif</SelectItem>
-            <SelectItem value="pasif">Pasif</SelectItem>
+            <SelectItem value="all">{t('all')}</SelectItem>
+            <SelectItem value="aktif">{t('active')}</SelectItem>
+            <SelectItem value="pasif">{t('inactive')}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -207,10 +209,10 @@ export function BayiList() {
           }}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Firma Seçin" />
+            <SelectValue placeholder={t('select-company')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tüm Firmalar</SelectItem>
+            <SelectItem value="all">{t('all-companies')}</SelectItem>
             {firmaResponse?.data?.map((firma: any) => (
               <SelectItem key={firma.id} value={firma.id.toString()}>
                 {firma.name}
@@ -227,7 +229,7 @@ export function BayiList() {
           className="w-full sm:w-auto justify-center"
         >
           <PlusCircle className="h-4 w-4 mr-2" />
-          Bayi Ekle
+          {t('add-dealer')}
         </Button>
       </div>
 
@@ -243,17 +245,17 @@ export function BayiList() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50px]">No</TableHead>
-                  <TableHead>Bayi Adı</TableHead>
-                  <TableHead>Firma</TableHead>
-                  <TableHead className="hidden md:table-cell">İl/İlçe</TableHead>
-                  <TableHead className="hidden lg:table-cell">E-posta</TableHead>
-                  <TableHead className="hidden lg:table-cell">Telefon</TableHead>
-                  <TableHead>Durum</TableHead>
-                  <TableHead className="hidden lg:table-cell">Bayi Oranı (%)</TableHead>
-                  <TableHead className="hidden lg:table-cell">Vergi Dairesi</TableHead>
-                  <TableHead className="hidden lg:table-cell">Vergi No</TableHead>
-                  <TableHead className="w-[100px] text-right">İşlemler</TableHead>
+                  <TableHead className="w-[50px]">{t('no')}</TableHead>
+                  <TableHead>{t('dealer-name')}</TableHead>
+                  <TableHead>{t('company')}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t('city-district')}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t('email')}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t('phone')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t('dealer-rate')} (%)</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t('tax-office')}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t('tax-number')}</TableHead>
+                  <TableHead className="w-[100px] text-right">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -282,7 +284,7 @@ export function BayiList() {
                               : "bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20"
                           }`}
                         >
-                          {bayi.aktif ? "Aktif" : "Pasif"}
+                          {bayi.aktif ? t('active') : t('inactive')}
                         </span>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
@@ -328,8 +330,8 @@ export function BayiList() {
                   <TableRow>
                     <TableCell colSpan={11} className="h-24 text-center">
                       {debouncedSearchTerm || firmaFilter !== "all" || durumFilter !== "all"
-                        ? "Arama kriterlerine uygun bayi bulunamadı"
-                        : "Kayıtlı bayi bulunamadı"}
+                        ? t('no-dealers-found-matching-criteria')
+                        : t('no-dealers-found')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -359,13 +361,13 @@ export function BayiList() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Bayiyi Sil</AlertDialogTitle>
+            <AlertDialogTitle>{t('delete-dealer')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Bu bayiyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+              {t('delete-dealer-confirmation')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
@@ -374,7 +376,7 @@ export function BayiList() {
                 }
               }}
             >
-              Sil
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

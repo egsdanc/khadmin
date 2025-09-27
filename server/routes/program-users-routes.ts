@@ -53,7 +53,7 @@ router.get("/", async (req, res) => {
 
     // Get total count for pagination
     const [countResult] = await connection.execute(
-      `SELECT COUNT(*) as total FROM kullanicilar k ${whereClause}`,
+      `SELECT COUNT(*) as total FROM kullanicilar k WHERE k.deleted_at IS NULL ${whereClause ? 'AND ' + whereClause.replace('WHERE ', '') : ''}`,
       queryParams
     );
     const total = (countResult as any)[0].total;
@@ -74,7 +74,8 @@ router.get("/", async (req, res) => {
       FROM kullanicilar k
       LEFT JOIN firmalar f ON k.firma_id = f.id
       LEFT JOIN bayiler b ON k.bayi_id = b.id
-      ${whereClause}
+      WHERE k.deleted_at IS NULL
+      ${whereClause ? 'AND ' + whereClause.replace('WHERE ', '') : ''}
       ORDER BY k.id ASC
       LIMIT ? OFFSET ?
     `, [...queryParams, limit, offset]);
@@ -241,7 +242,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Program kullanıcısını sil
+// Program kullanıcısını sil (soft delete)
 router.delete("/:id", async (req, res) => {
   let connection;
   try {
@@ -254,7 +255,27 @@ router.delete("/:id", async (req, res) => {
     }
 
     connection = await db.getConnection();
-    const [result] = await connection.execute('DELETE FROM kullanicilar WHERE id = ?', [id]);
+    
+    // Önce kullanıcının VIN testleri var mı kontrol et
+    const [vinTests] = await connection.execute(
+      'SELECT COUNT(*) as count FROM vinreader WHERE usersid = ?',
+      [id]
+    );
+    
+    const hasVinTests = (vinTests as any)[0].count > 0;
+    
+    if (hasVinTests) {
+      return res.status(400).json({
+        success: false,
+        message: "Bu kullanıcının VIN testleri bulunduğu için silinemez. Önce testleri silin veya kullanıcıyı pasif yapın."
+      });
+    }
+    
+    // Soft delete - deleted_at alanını doldur
+    const [result] = await connection.execute(
+      'UPDATE kullanicilar SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [id]
+    );
 
     if ((result as any)?.affectedRows === 0) {
       return res.status(404).json({

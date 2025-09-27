@@ -13,6 +13,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Check, X } from "lucide-react";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Role {
   id: number;
@@ -110,6 +111,7 @@ const roleFormSchema = z.object({
 type RoleFormValues = z.infer<typeof roleFormSchema>;
 
 export function RoleDialog({ role, onClose }: RoleDialogProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -278,16 +280,16 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
             });
           } else {
             toast({
-              title: "Hata",
-              description: response.data.message || "İzinler getirilemedi",
+              title: t('error'),
+              description: response.data.message || t('error-loading-permissions'),
               variant: "destructive",
             });
           }
         } catch (error: any) {
           console.error("Error fetching permissions:", error);
           toast({
-            title: "Hata",
-            description: error.response?.data?.message || "İzinler getirilirken bir hata oluştu",
+            title: t('error'),
+            description: error.response?.data?.message || t('error-fetching-permissions'),
             variant: "destructive",
           });
         }
@@ -306,7 +308,7 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
       console.log("Role name being sent:", role?.name); // Add this log
 
       if (!role?.name) {
-        throw new Error("Rol adı zorunludur");
+        throw new Error(t('role-name-required'));
       }
 
       const response = await api.post("/roles/update-permissions", {
@@ -318,8 +320,8 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roles"] });
       toast({
-        title: "Başarılı",
-        description: "Rol izinleri başarıyla güncellendi",
+        title: t('success'),
+        description: t('permissions-successfully-updated'),
       });
       setOpen(false);
       form.reset();
@@ -330,8 +332,8 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
     onError: (error: any) => {
       console.error("İzin güncelleme hatası:", error);
       toast({
-        title: "Hata",
-        description: error.response?.data?.message || "Rol izinleri güncellenirken bir hata oluştu",
+        title: t('error'),
+        description: error.response?.data?.message || t('error-updating-permissions'),
         variant: "destructive",
       });
     },
@@ -375,13 +377,13 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
   const dialogContent = (
     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
-        <DialogTitle>{role?.name} Rol İzinlerini Düzenle</DialogTitle>
+        <DialogTitle>{role?.name} {t('role-permissions-edit')}</DialogTitle>
       </DialogHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">İzinler</h3>
+              <h3 className="text-lg font-medium">{t('permissions')}</h3>
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -391,7 +393,7 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
                   onClick={() => handleSelectAllPermissions(true)}
                 >
                   <Check className="h-4 w-4 mr-2" />
-                  Tümünü Seç
+                  {t('select-all')}
                 </Button>
                 <Button
                   type="button"
@@ -401,7 +403,7 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
                   onClick={() => handleSelectAllPermissions(false)}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Tümünü Kaldır
+                  {t('deselect-all')}
                 </Button>
               </div>
             </div>
@@ -409,7 +411,7 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
             {Object.entries(form.watch("permissions") || {}).map(([module, permissions]) => (
               <div key={module} className="space-y-2 border rounded-lg p-4">
                 <div className="flex justify-between items-center">
-                  <h4 className="font-medium">{module}</h4>
+                  <h4 className="font-medium">{t(module)}</h4>
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -419,7 +421,7 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
                       onClick={() => handleModulePermissions(module, permissions, true)}
                     >
                       <Check className="h-3 w-3 mr-1" />
-                      Tümünü Seç
+                      {t('select-all')}
                     </Button>
                     <Button
                       type="button"
@@ -429,7 +431,7 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
                       onClick={() => handleModulePermissions(module, permissions, false)}
                     >
                       <X className="h-3 w-3 mr-1" />
-                      Tümünü Kaldır
+                      {t('deselect-all')}
                     </Button>
                   </div>
                 </div>
@@ -451,12 +453,12 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
                             htmlFor={`${module}-${action}`}
                             className="text-sm font-medium capitalize"
                           >
-                            {action === "view" ? "Görüntüle" :
-                              action === "create" ? "Oluştur" :
-                                action === "edit" ? "Düzenle" :
-                                  action === "delete" ? "Sil" :
-                                    action === "load" ? "Yükle" :
-                                      action === "query" ? "Sorgula" : action}
+                            {action === "view" ? t('view') :
+                              action === "create" ? t('create') :
+                                action === "edit" ? t('edit') :
+                                  action === "delete" ? t('delete') :
+                                    action === "load" ? t('load') :
+                                      action === "query" ? t('query') : action}
                           </label>
                         </FormItem>
                       )}
@@ -469,10 +471,10 @@ export function RoleDialog({ role, onClose }: RoleDialogProps) {
 
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" onClick={handleClose}>
-              İptal
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Kaydediliyor..." : "Kaydet"}
+              {mutation.isPending ? t('saving') : t('save')}
             </Button>
           </div>
         </form>

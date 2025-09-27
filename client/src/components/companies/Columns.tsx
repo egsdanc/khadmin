@@ -1,6 +1,7 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, Edit } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export interface Company {
   id: number;
@@ -22,7 +23,10 @@ export interface Company {
   bakiye: number;
 }
 
-export const columns: ColumnDef<Company>[] = [
+export const useColumns = (): ColumnDef<Company>[] => {
+  const { t } = useLanguage();
+  
+  return [
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -31,7 +35,7 @@ export const columns: ColumnDef<Company>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Firma Adı
+          {t('company-name')}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -45,7 +49,7 @@ export const columns: ColumnDef<Company>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Firma Ünvanı
+          {t('company-title')}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -53,19 +57,19 @@ export const columns: ColumnDef<Company>[] = [
   },
   {
     accessorKey: "email",
-    header: "E-posta",
+    header: t('email'),
   },
   {
     accessorKey: "telefon",
-    header: "Telefon",
+    header: t('phone'),
   },
   {
     accessorKey: "vergi_dairesi",
-    header: "Vergi Dairesi",
+    header: t('tax-office'),
   },
   {
     accessorKey: "vergi_no",
-    header: "Vergi No",
+    header: t('tax-number'),
   },
   {
     accessorKey: "durum",
@@ -75,7 +79,7 @@ export const columns: ColumnDef<Company>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Durum
+          {t('status')}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -90,7 +94,7 @@ export const columns: ColumnDef<Company>[] = [
               : "bg-red-100 text-red-800"
           }`}
         >
-          {status === "active" ? "Aktif" : "Pasif"}
+          {status === "active" ? t('active') : t('inactive')}
         </span>
       );
     },
@@ -115,4 +119,5 @@ export const columns: ColumnDef<Company>[] = [
       );
     },
   },
-];
+  ];
+};

@@ -21,17 +21,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const companySchema = z.object({
-  name: z.string().min(1, "Firma adı zorunludur"),
-  firma_unvan: z.string().min(1, "Firma ünvanı zorunludur"),
-  email: z.string().email("Geçerli bir email adresi giriniz"),
-  telefon: z.string().min(1, "Telefon numarası zorunludur"),
-  adres: z.string().min(1, "Adres zorunludur"),
-  vergi_dairesi: z.string().min(1, "Vergi dairesi zorunludur"),
+  name: z.string().min(1, "Company name is required"),
+  firma_unvan: z.string().min(1, "Company title is required"),
+  email: z.string().email("Please enter a valid email address"),
+  telefon: z.string().min(1, "Phone number is required"),
+  adres: z.string().min(1, "Address is required"),
+  vergi_dairesi: z.string().min(1, "Tax office is required"),
   vergi_no: z.string().optional(),
   tc_no: z.string().optional(),
-  iban: z.string().min(1, "IBAN zorunludur"),
+  iban: z.string().min(1, "IBAN is required"),
 });
 
 type CompanyFormValues = z.infer<typeof companySchema>;
@@ -42,6 +43,7 @@ interface CompanyDialogProps {
 }
 
 export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -80,15 +82,15 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
       toast({
-        title: "Başarılı",
-        description: "Firma başarıyla eklendi",
+        title: t('success'),
+        description: t('company-added-successfully'),
       });
       form.reset();
       onOpenChange(false);
     },
     onError: (error) => {
       toast({
-        title: "Hata",
+        title: t('error'),
         description: error.message,
         variant: "destructive",
       });
@@ -103,9 +105,9 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Yeni Firma Ekle</DialogTitle>
+          <DialogTitle>{t('add-new-company')}</DialogTitle>
           <DialogDescription>
-            Firma bilgilerini girerek yeni bir firma ekleyebilirsiniz.
+            {t('add-company-description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -117,9 +119,9 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Firma Adı</FormLabel>
+                    <FormLabel>{t('company-name')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Firma adı giriniz" {...field} />
+                      <Input placeholder={t('enter-company-name')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -131,9 +133,9 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
                 name="firma_unvan"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Firma Ünvanı</FormLabel>
+                    <FormLabel>{t('company-title')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Firma ünvanı giriniz" {...field} />
+                      <Input placeholder={t('enter-company-title')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -145,9 +147,9 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t('email')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Email adresi giriniz" {...field} />
+                      <Input placeholder={t('enter-email-address')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -159,9 +161,9 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
                 name="telefon"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Telefon</FormLabel>
+                    <FormLabel>{t('phone')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Telefon numarası giriniz" {...field} />
+                      <Input placeholder={t('enter-phone-number')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -173,9 +175,9 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
                 name="vergi_dairesi"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vergi Dairesi</FormLabel>
+                    <FormLabel>{t('tax-office')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Vergi dairesi giriniz" {...field} />
+                      <Input placeholder={t('enter-tax-office')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -187,9 +189,9 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
                 name="vergi_no"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vergi No</FormLabel>
+                    <FormLabel>{t('tax-number')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Vergi numarası giriniz" {...field} />
+                      <Input placeholder={t('enter-tax-number')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -201,9 +203,9 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
                 name="tc_no"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>TC No</FormLabel>
+                    <FormLabel>{t('tc-number')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="TC kimlik numarası giriniz" {...field} />
+                      <Input placeholder={t('enter-tc-number')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -215,9 +217,9 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
                 name="adres"
                 render={({ field }) => (
                   <FormItem className="col-span-2">
-                    <FormLabel>Adres</FormLabel>
+                    <FormLabel>{t('address')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Adres giriniz" {...field} />
+                      <Input placeholder={t('enter-address')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -229,9 +231,9 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
                 name="iban"
                 render={({ field }) => (
                   <FormItem className="col-span-2">
-                    <FormLabel>IBAN</FormLabel>
+                    <FormLabel>{t('iban')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="IBAN numarası giriniz" {...field} />
+                      <Input placeholder={t('enter-iban-number')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -245,10 +247,10 @@ export function CompanyDialog({ open, onOpenChange }: CompanyDialogProps) {
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                İptal
+                {t('cancel')}
               </Button>
               <Button type="submit" disabled={createCompany.isPending}>
-                {createCompany.isPending ? "Ekleniyor..." : "Ekle"}
+                {createCompany.isPending ? t('adding') : t('add')}
               </Button>
             </div>
           </form>

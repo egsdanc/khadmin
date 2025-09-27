@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { jsPDF } from "jspdf";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface KilometreTest {
   id: number;
@@ -41,6 +42,7 @@ interface KilometreDetailsModalProps {
 }
 
 export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDetailsModalProps) {
+  const { t } = useLanguage();
   const { data: response, isLoading } = useQuery<ApiResponse>({
     queryKey: [`/api/kilometre/${testId}`],
     enabled: isOpen && !!testId,
@@ -69,16 +71,16 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
     // Başlık
     doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
-    doc.text("KILOMETRE HACKER", doc.internal.pageSize.width / 2, 30, { align: "center" });
+    doc.text(t('kilometre-hacker').toUpperCase(), doc.internal.pageSize.width / 2, 30, { align: "center" });
 
     // Alt Başlık
     doc.setFontSize(16);
     doc.setFont("helvetica", "normal");
-    doc.text("Test Raporu", doc.internal.pageSize.width / 2, 45, { align: "center" });
+    doc.text(t('test-report'), doc.internal.pageSize.width / 2, 45, { align: "center" });
 
     // Tarih
     doc.setFontSize(10);
-    doc.text(`Test Tarihi: ${formatDate(firstTest.tarih)}`, 20, 60);
+    doc.text(`${t('test-date')}: ${formatDate(firstTest.tarih)}`, 20, 60);
 
     // Firma ve Bayi Bilgileri
     const addText = (text: string, x: number, y: number) => {
@@ -100,10 +102,10 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
     };
 
     // Firma ve Bayi Bilgileri
-    addText("Firma", doc.internal.pageSize.width - 140, 60);
+    addText(t('company'), doc.internal.pageSize.width - 140, 60);
     addText(firstTest.firma_adi || '-', doc.internal.pageSize.width - 140, 65);
 
-    addText("Bayi", doc.internal.pageSize.width - 80, 60);
+    addText(t('dealer'), doc.internal.pageSize.width - 80, 60);
     addText(firstTest.bayi_adi || '-', doc.internal.pageSize.width - 80, 65);
 
     // Araç Bilgileri Kartı
@@ -111,23 +113,23 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
     doc.rect(20, 75, doc.internal.pageSize.width - 40, 50, 'F');
 
     // Araç Bilgileri
-    addText("Plaka", 30, 85);
+    addText(t('plate'), 30, 85);
     addText(firstTest.plaka || '', 30, 90);
 
-    addText("Sase No", 30, 100);
+    addText(t('chassis-number'), 30, 100);
     addText(firstTest.sase || '', 30, 105);
 
-    addText("Motor No", 30, 115);
+    addText(t('engine-number'), 30, 115);
     addText(firstTest.motor || '', 30, 120);
 
     const rightCol = doc.internal.pageSize.width - 80;
-    addText("Marka/Model", rightCol, 85);
+    addText(t('brand-model'), rightCol, 85);
     addText(`${firstTest.marka || ''} ${firstTest.model || ''}`, rightCol, 90);
 
-    addText("Model Yili", rightCol, 100);
+    addText(t('model-year'), rightCol, 100);
     addText(firstTest.yil?.toString() || '', rightCol, 105);
 
-    addText("Kilometre", rightCol, 115);
+    addText(t('kilometre'), rightCol, 115);
     addText(firstTest.gosterge_km?.toString() || '', rightCol, 120);
 
     // Tablo başlangıç pozisyonu
@@ -140,16 +142,16 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
     doc.setFillColor(240, 240, 240);
     doc.rect(margin, tableTop, tableWidth, rowHeight, 'F');
 
-    // Sütun genişlikleri - orijinal genişlikler
-    const testTipiColWidth = 100; // Test Tipi sütunu için genişlik
-    const kilometreColWidth = 50;  // Kilometre sütunu için genişlik
+    // Sütun genişlikleri - sayfa genişliğine göre ayarla
+    const testTipiColWidth = 120; // Test Tipi sütunu için genişlik
+    const kilometreColWidth = 60;  // Kilometre sütunu için genişlik
     const testTipiStart = margin + 5;
     const kilometreStart = testTipiStart + testTipiColWidth;
 
     // Başlıklar
     doc.setFont("helvetica", "bold");
-    addText("Modul", testTipiStart, tableTop + 10);
-    addText("Kilometre", kilometreStart, tableTop + 10);
+    addText(t('module'), testTipiStart, tableTop + 10);
+    addText(t('kilometre'), kilometreStart, tableTop + 10);
 
     // Veriler
     let currentY = tableTop + rowHeight;
@@ -163,23 +165,32 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
 
       // Test tipi ismini çok satırlı olarak göster
       const testTipiText = test.kontrolmod || '';
-      const maxWidth = testTipiColWidth - 5; // Sütun genişliği - padding
+      const testTipiMaxWidth = testTipiColWidth - 5; // Sütun genişliği - padding
       
       // jsPDF'in splitTextToSize fonksiyonunu kullanarak metni böl
-      const splitText = doc.splitTextToSize(testTipiText, maxWidth);
+      const splitTestTipi = doc.splitTextToSize(testTipiText, testTipiMaxWidth);
       const lineHeight = 4; // Satır arası yükseklik
       
       // Test tipi ismini çok satırlı olarak yaz
-      splitText.forEach((line: string, index: number) => {
+      splitTestTipi.forEach((line: string, index: number) => {
         addText(line, testTipiStart, currentY + 10 + (index * lineHeight));
       });
       
-      // Kilometre değerini yaz
-      addText(test.km || '', kilometreStart, currentY + 10);
+      // Kilometre değerini de çok satırlı olarak göster
+      const kilometreText = test.km || '';
+      const kilometreMaxWidth = kilometreColWidth - 5; // Sütun genişliği - padding
+      const splitKilometre = doc.splitTextToSize(kilometreText, kilometreMaxWidth);
+      
+      // Kilometre değerini çok satırlı olarak yaz
+      splitKilometre.forEach((line: string, index: number) => {
+        addText(line, kilometreStart, currentY + 10 + (index * lineHeight));
+      });
 
-      // Satır yüksekliğini çok satırlı metne göre ayarla
-      const textHeight = Math.max(splitText.length * lineHeight, 8);
-      currentY += Math.max(rowHeight, textHeight + 2);
+      // Satır yüksekliğini en uzun çok satırlı metne göre ayarla
+      const testTipiHeight = splitTestTipi.length * lineHeight;
+      const kilometreHeight = splitKilometre.length * lineHeight;
+      const maxTextHeight = Math.max(testTipiHeight, kilometreHeight, 8);
+      currentY += Math.max(rowHeight, maxTextHeight + 2);
     });
 
     doc.save(`kilometre-hacker-${firstTest.plaka}-${formatDate(firstTest.tarih)}.pdf`);
@@ -200,43 +211,43 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
           <div className="space-y-6">
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Araç Bilgileri</h3>
+                <h3 className="text-lg font-semibold mb-4">{t('vehicle-information')}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Test Tarihi</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('test-date')}</p>
                     <p className="mt-1">{formatDate(firstTest.tarih)}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Plaka</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('plate')}</p>
                     <p className="mt-1">{firstTest.plaka}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Şase No</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('chassis-number')}</p>
                     <p className="mt-1">{firstTest.sase}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Motor No</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('engine-number')}</p>
                     <p className="mt-1">{firstTest.motor}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Marka/Model</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('brand-model')}</p>
                     <p className="mt-1">{firstTest.marka} {firstTest.model}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Model Yılı</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('model-year')}</p>
                     <p className="mt-1">{firstTest.yil}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Gösterge KM</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('odometer-km')}</p>
                     <p className="mt-1">{firstTest.gosterge_km}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Ücret</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('fee')}</p>
                     <p className="mt-1">{firstTest.ucret}</p>
                   </div>
                   {firstTest.aciklama && (
                     <div className="col-span-2">
-                      <p className="text-sm font-medium text-muted-foreground">Açıklama</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('description')}</p>
                       <p className="mt-1">{firstTest.aciklama}</p>
                     </div>
                   )}
@@ -246,9 +257,9 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
 
             <div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
-                <h3 className="text-lg font-semibold">Test Detayları</h3>
+                <h3 className="text-lg font-semibold">{t('test-details')}</h3>
                 <Button variant="outline" onClick={generatePDF}>
-                  PDF İndir
+                  {t('download-pdf')}
                 </Button>
               </div>
 
@@ -256,8 +267,8 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[150px] whitespace-nowrap">Test Tipi</TableHead>
-                      <TableHead className="w-[100px] text-right whitespace-nowrap">Kilometre</TableHead>
+                      <TableHead className="w-[150px] whitespace-nowrap">{t('test-type')}</TableHead>
+                      <TableHead className="w-[100px] text-right whitespace-nowrap">{t('kilometre')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -274,7 +285,7 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
           </div>
         ) : (
           <div className="p-4 text-center text-muted-foreground">
-            Test detayları yüklenemedi
+            {t('test-details-could-not-be-loaded')}
           </div>
         )}
       </DialogContent>
