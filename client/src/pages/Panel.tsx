@@ -403,13 +403,13 @@ const Panel = () => {
                           borderRadius: '8px',
                           boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                         }}
-                        formatter={(value: number) => [`${value.toLocaleString('tr-TR')} ₺`, 'Komisyon']}
+                        formatter={(value: number) => [`${value.toLocaleString('tr-TR')} ₺`, t('commission')]}
                       />
                       <Legend />
                       <Line
                         type="monotone"
                         dataKey="komisyon"
-                        name="Komisyon (₺)"
+                        name={`${t('commission')} (₺)`}
                         stroke={COLORS.primary}
                         strokeWidth={2}
                         dot={{ stroke: COLORS.primary, strokeWidth: 2 }}
