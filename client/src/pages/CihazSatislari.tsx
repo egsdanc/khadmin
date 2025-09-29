@@ -727,21 +727,19 @@ export default function CihazSatislari() {
                   )}
                 />
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="aciklama"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('description')}</FormLabel>
-                        <FormControl>
-                          <Input placeholder={t('enter-description')} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="aciklama"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('description')}</FormLabel>
+                      <FormControl>
+                        <Input placeholder={t('enter-description')} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <DialogFooter>
                   <Button
