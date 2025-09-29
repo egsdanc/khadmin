@@ -55,10 +55,32 @@ router.get('/:ulkeId/iller', async (req, res) => {
 });
 
 // Belirli bir ilin ilçelerini getir
-router.get('/:ulkeId/iller/:ilId/ilceler', async (req, res) => {
+router.get('/:ulkeId/iller/:ilAdi/ilceler', async (req, res) => {
   try {
-    const { ulkeId, ilId } = req.params;
+    const { ulkeId, ilAdi } = req.params;
+    console.log('İlçe API çağrısı:', { ulkeId, ilAdi });
+    console.log('parseInt(ulkeId):', parseInt(ulkeId));
     
+    // Önce il ID'sini bul
+    const ilKaydi = await db
+      .select({ id: iller.id })
+      .from(iller)
+      .where(and(
+        eq(iller.il, ilAdi),
+        eq(iller.ulke_id, parseInt(ulkeId))
+      ))
+      .limit(1);
+    
+    console.log('İl kaydı bulundu:', ilKaydi);
+    console.log('İl kaydı ID:', ilKaydi[0]?.id);
+
+    if (ilKaydi.length === 0) {
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
+
     const ilcelerListesi = await db
       .select({
         id: ilceler.id,
@@ -66,7 +88,7 @@ router.get('/:ulkeId/iller/:ilId/ilceler', async (req, res) => {
         il_id: ilceler.il_id
       })
       .from(ilceler)
-      .where(eq(ilceler.il_id, parseInt(ilId)))
+      .where(eq(ilceler.il_id, ilKaydi[0].id))
       .orderBy(ilceler.ilce);
 
     res.json({

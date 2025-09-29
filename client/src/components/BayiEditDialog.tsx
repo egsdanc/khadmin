@@ -17,6 +17,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import type { Bayi } from "./BayiList";
 
+interface Ulke {
+  id: number;
+  ulke_adi: string;
+  ulke_kodu: string;
+}
+
 interface IlIlce {
   id: number;
   il: string;
@@ -36,6 +42,7 @@ interface BayiFormData {
   tel: string;
   mail: string;
   adres: string;
+  ulke_id: number;
   il: string;
   ilce: string;
   aktif: number;
@@ -58,10 +65,11 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
     tel: '',
     mail: '',
     adres: '',
+    ulke_id: 1, // Türkiye varsayılan
     il: '',
     ilce: '',
     aktif: 1,
-    bayi_oran: 0,
+    bayi_oran: 12,
     vergi_dairesi: '',
     vergi_no: ''
   });
@@ -71,8 +79,24 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: ilIlceResponse, isLoading: isLoadingIlIlce } = useQuery<{ success: boolean; data: IlIlce[] }>({
-    queryKey: ["/api/il-ilce"],
+  const { data: ulkelerResponse, isLoading: isLoadingUlkeler } = useQuery<{ success: boolean; data: Ulke[] }>({
+    queryKey: ["/api/ulkeler"],
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false
+  });
+
+  const { data: illerResponse, isLoading: isLoadingIller } = useQuery<{ success: boolean; data: IlIlce[] }>({
+    queryKey: [`/api/ulkeler/${formData.ulke_id}/iller`],
+    enabled: !!formData.ulke_id,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false
+  });
+
+  const { data: ilcelerResponse, isLoading: isLoadingIlceler } = useQuery<{ success: boolean; data: Array<{ id: number; ilce: string; }> }>({
+    queryKey: [`/api/ulkeler/${formData.ulke_id}/iller/${encodeURIComponent(formData.il)}/ilceler`],
+    enabled: !!formData.ulke_id && !!formData.il,
     staleTime: Infinity,
     refetchOnMount: false,
     refetchOnWindowFocus: false
@@ -85,14 +109,10 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
     refetchOnWindowFocus: false
   });
 
+  const ulkeler = ulkelerResponse?.data || [];
   const firmalar = firmalarResponse?.data || [];
-  const ilIlceData = ilIlceResponse?.data || [];
-
-  const ilceler = useMemo(() => {
-    if (!formData.il) return [];
-    const selectedIl = ilIlceData.find(il => il.il === formData.il);
-    return selectedIl?.ilceler || [];
-  }, [formData.il, ilIlceData]);
+  const iller = illerResponse?.data || [];
+  const ilceler = ilcelerResponse?.data || [];
 
   useEffect(() => {
     if (!open) {
@@ -102,10 +122,11 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
         tel: '',
         mail: '',
         adres: '',
+        ulke_id: 1, // Türkiye varsayılan
         il: '',
         ilce: '',
         aktif: 1,
-        bayi_oran: 0,
+        bayi_oran: 12,
         vergi_dairesi: '',
         vergi_no: ''
       });
@@ -113,7 +134,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
       return;
     }
 
-    if (isLoadingIlIlce || isLoadingFirmalar) {
+    if (isLoadingUlkeler || isLoadingIller || isLoadingIlceler || isLoadingFirmalar) {
       setIsFormReady(false);
       return;
     }
@@ -126,17 +147,18 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
         tel: bayi.telefon || '',
         mail: bayi.email || '',
         adres: bayi.adres || '',
+        ulke_id: bayi.ulke_id || 1, // Varsayılan Türkiye
         il: bayi.il?.trim() || '',
         ilce: bayi.ilce?.trim() || '',
         aktif: bayi.aktif ? 1 : 0,
-        bayi_oran: bayi.bayi_oran || 0,
+        bayi_oran: bayi.bayi_oran || 12,
         vergi_dairesi: bayi.vergi_dairesi || '',
         vergi_no: bayi.vergi_no || ''
       });
     }
 
     setIsFormReady(true);
-  }, [bayi, open, isLoadingIlIlce, isLoadingFirmalar]);
+  }, [bayi, open, isLoadingUlkeler, isLoadingIller, isLoadingIlceler, isLoadingFirmalar]);
 
   const bayiMutation = useMutation({
     mutationFn: async (submitData: BayiFormData) => {
@@ -318,6 +340,30 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
 
             <div className="space-y-4">
               <div>
+                <Label htmlFor="ulke">{t('country')}</Label>
+                <Select
+                  value={formData.ulke_id ? formData.ulke_id.toString() : ""}
+                  onValueChange={(value) => setFormData(prev => ({ 
+                    ...prev, 
+                    ulke_id: parseInt(value, 10),
+                    il: '', // Ülke değiştiğinde il ve ilçeyi sıfırla
+                    ilce: ''
+                  }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('select-country')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ulkeler?.map((ulke) => (
+                      <SelectItem key={ulke.id} value={ulke.id.toString()}>
+                        {ulke.ulke_adi}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
                 <Label htmlFor="il">{t('city')}</Label>
                 <Select
                   value={formData.il}
@@ -329,7 +375,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
                     <SelectValue placeholder={t('select-city')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {ilIlceData?.map((il) => (
+                    {iller?.map((il) => (
                       <SelectItem key={il.id} value={il.il}>
                         {il.il}
                       </SelectItem>
@@ -377,7 +423,7 @@ export function BayiEditDialog({ bayi, open, onOpenChange }: BayiEditDialogProps
                   value={formData.bayi_oran}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    bayi_oran: e.target.value ? parseFloat(e.target.value) : 0
+                    bayi_oran: e.target.value ? parseFloat(e.target.value) : 12
                   }))}
                 />
               </div>

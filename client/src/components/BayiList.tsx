@@ -42,6 +42,7 @@ interface Bayi {
   email: string | null;
   telefon: string | null;
   adres: string | null;
+  ulke_id?: number;
   il: string | null;
   ilce: string | null;
   bayi_oran: number;
