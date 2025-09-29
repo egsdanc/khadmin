@@ -43,7 +43,7 @@ const translations = {
     'info': 'Bilgi',
     'confirm': 'Onayla',
     'yes': 'Evet',
-    'no': 'Hayır',
+    'no': 'No',
     'ok': 'Tamam',
     'back': 'Geri',
     'next': 'İleri',
