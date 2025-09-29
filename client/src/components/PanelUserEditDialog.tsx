@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -89,6 +89,7 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -127,7 +128,7 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
       form.reset({
         name: user.name || "",
         email: user.email || "",
-        password: "",
+        password: user.password || "",
         firma_id: user.firma_id,
         bayi_id: user.bayi_id,
         role: user.role || "Bayi",
@@ -309,12 +310,25 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
                     {t('password')} {user?.id && `(${t('leave-empty-to-keep-current')})`}
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      {...field}
-                      className="h-9"
-                      {...(!user?.id && { required: true })}
-                    />
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        {...field}
+                        className="h-9 pr-10"
+                        {...(!user?.id && { required: true })}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
