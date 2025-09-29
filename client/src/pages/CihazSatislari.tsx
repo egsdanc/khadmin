@@ -40,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Download } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -113,6 +113,107 @@ export default function CihazSatislari() {
   const [kalanTutar, setKalanTutar] = useState<number>(0);
   const [primTutari, setPrimTutari] = useState<number>(0);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  // PDF indirme fonksiyonu
+  const downloadPDF = async () => {
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF();
+    
+    // Türkçe karakter desteği için font ayarı
+    doc.setFont('helvetica');
+    
+    // Türkçe karakterleri düzelt
+    const fixTurkishChars = (text: string) => {
+      return text
+        .replace(/ı/g, 'i')
+        .replace(/İ/g, 'I')
+        .replace(/ğ/g, 'g')
+        .replace(/Ğ/g, 'G')
+        .replace(/ü/g, 'u')
+        .replace(/Ü/g, 'U')
+        .replace(/ş/g, 's')
+        .replace(/Ş/g, 'S')
+        .replace(/ö/g, 'o')
+        .replace(/Ö/g, 'O')
+        .replace(/ç/g, 'c')
+        .replace(/Ç/g, 'C');
+    };
+    
+    // PDF başlığı
+    doc.setFontSize(16);
+    doc.text(fixTurkishChars(t('device-sales').toUpperCase()), 14, 20);
+    
+    // Tarih
+    doc.setFontSize(10);
+    doc.text(fixTurkishChars(`${t('date')}: ${new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'tr-TR')}`), 14, 30);
+    
+    // Tablo başlıkları
+    const headers = [
+      t('number'),
+      t('date'),
+      t('company'),
+      t('dealer'),
+      t('total-amount'),
+      t('paid-amount'),
+      t('remaining-amount'),
+      t('delivery-status'),
+      t('commission')
+    ];
+    
+    // Sütun genişlikleri
+    const colWidths = [15, 25, 30, 30, 25, 25, 25, 30, 25];
+    let yPosition = 50;
+    
+    // Başlık satırı
+    doc.setFontSize(8);
+    let xPosition = 14;
+    headers.forEach((header, index) => {
+      doc.text(fixTurkishChars(header), xPosition, yPosition);
+      xPosition += colWidths[index];
+    });
+    
+    yPosition += 10;
+    
+    // Veri satırları
+    satislar.forEach((satis, index) => {
+      if (yPosition > 280) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      // Para birimi formatlaması (₺ işareti yerine TL kullan)
+      const formatCurrencyForPDF = (amount: number) => {
+        return `${amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`;
+      };
+
+      const rowData = [
+        (index + 1).toString(),
+        formatDate(satis.created_at),
+        fixTurkishChars(satis.firma_adi),
+        fixTurkishChars(satis.bayi_adi),
+        formatCurrencyForPDF(satis.toplam_tutar),
+        formatCurrencyForPDF(satis.odenen_tutar),
+        formatCurrencyForPDF(satis.kalan_tutar),
+        satis.teslim_durumu === "Teslim Edildi" ? t('delivered') :
+        satis.teslim_durumu === "Kargoya Verildi" ? t('shipped') :
+        satis.teslim_durumu === "Hazirlaniyor" ? t('preparing') :
+        t('pending'),
+        formatCurrencyForPDF(satis.prim_tutari)
+      ];
+      
+      xPosition = 14;
+      rowData.forEach((data, dataIndex) => {
+        const text = doc.splitTextToSize(fixTurkishChars(data), colWidths[dataIndex]);
+        doc.text(text, xPosition, yPosition);
+        xPosition += colWidths[dataIndex];
+      });
+      
+      yPosition += 15;
+    });
+    
+    // PDF'i indir
+    doc.save(`${fixTurkishChars(t('device-sales'))}-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -399,13 +500,14 @@ export default function CihazSatislari() {
           </p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto" onClick={handleNewSale}>
-              <Plus className="mr-2 h-4 w-4" />
-{t('new-sale')}
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full sm:w-auto" onClick={handleNewSale}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t('new-sale')}
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingId ? t('edit-device-sale') : t('new-device-sale')}</DialogTitle>
@@ -670,6 +772,17 @@ export default function CihazSatislari() {
             </Form>
           </DialogContent>
         </Dialog>
+        
+        <Button 
+          variant="outline" 
+          onClick={downloadPDF}
+          className="w-full sm:w-auto"
+          disabled={satislar.length === 0}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          {t('download-pdf')}
+        </Button>
+        </div>
       </div>
 
       <Card>
@@ -700,9 +813,9 @@ export default function CihazSatislari() {
               </TableHeader>
               <TableBody>
                 {satislar.length > 0 ? (
-                  satislar.map((satis) => (
+                  satislar.map((satis, index) => (
                     <TableRow key={satis.id}>
-                      <TableCell className="hidden sm:table-cell">{satis.no}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{(currentPage - 1) * limit + index + 1}</TableCell>
                       <TableCell className="hidden sm:table-cell">{formatDate(satis.created_at)}</TableCell>
                       <TableCell>{satis.firma_adi}</TableCell>
                       <TableCell>{satis.bayi_adi}</TableCell>
