@@ -194,7 +194,7 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
         firstlogin: user.firstlogin || 0,
         firma_id: user.firma_id,
         bayi_id: user.bayi_id,
-        sifre: ""
+        sifre: user.sifre || ""
       });
 
       if (user.bayi_name) {
