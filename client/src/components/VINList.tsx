@@ -73,6 +73,10 @@ export function VINList() {
   const { data: response, isLoading } = useQuery<ApiResponse>({
     queryKey: ["/api/vinreader", { page: currentPage, limit: itemsPerPage, startDate: dateRange?.from?.toISOString().split('T')[0], endDate: dateRange?.to?.toISOString().split('T')[0] }],
     queryFn: async () => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: itemsPerPage.toString(),
@@ -87,6 +91,7 @@ export function VINList() {
       }
       return response.json();
     },
+    enabled: !!user, // Sadece user varsa sorguyu çalıştır
     // refetchInterval: 3000,
     staleTime: 60000,  // 1 dakika
     refetchOnWindowFocus: true

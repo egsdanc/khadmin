@@ -132,65 +132,83 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
     addText(t('kilometre'), rightCol, 115);
     addText(firstTest.gosterge_km?.toString() || '', rightCol, 120);
 
-    // Tablo başlangıç pozisyonu
+    // === TABLO (her zaman sayfaya sığacak dinamik kolonlar) ===
     const tableTop = 135;
-    const rowHeight = 18; // Satır yüksekliğini artırdık
     const margin = 20;
-    const tableWidth = doc.internal.pageSize.width - (margin * 2);
+    const tableLeft = margin;
+    const tableRight = doc.internal.pageSize.width - margin;
+    const tableWidth = tableRight - tableLeft;
 
-    // Başlık satırı arka planı
+    const headerHeight = 12;
+    const rowMinHeight = 10;
+    const padX = 3;     // hücre yatay padding
+    const padY = 4;     // hücre dikey padding
+    const lineHeight = 4; // metin satır aralığı
+
+    // Başlık arka planı
     doc.setFillColor(240, 240, 240);
-    doc.rect(margin, tableTop, tableWidth, rowHeight, 'F');
+    doc.rect(tableLeft, tableTop, tableWidth, headerHeight, 'F');
 
-    // Sütun genişlikleri - sayfa genişliğine göre ayarla
-    const testTipiColWidth = 120; // Test Tipi sütunu için genişlik
-    const kilometreColWidth = 60;  // Kilometre sütunu için genişlik
-    const testTipiStart = margin + 5;
-    const kilometreStart = testTipiStart + testTipiColWidth;
+    // Tablo fontunu biraz küçült (kilometre değerleri sığsın)
+    doc.setFontSize(9);
+
+    // --- Dinamik kolon genişlikleri ---
+    // test tipi kolonu: tablonun ~%70'i, [80, 140] aralığında
+    let testTipiColWidth = Math.min(140, Math.max(80, Math.floor(tableWidth * 0.70)));
+    // kalan alan kilometre kolonuna
+    let kilometreColWidth = tableWidth - testTipiColWidth;
+
+    // Kolon başlangıç X'leri (iç padding ile)
+    const testTipiX = tableLeft + padX;
+    const kilometreX = testTipiX + testTipiColWidth + padX;
 
     // Başlıklar
     doc.setFont("helvetica", "bold");
-    addText(t('module'), testTipiStart, tableTop + 10);
-    addText(t('kilometre'), kilometreStart, tableTop + 10);
+    addText(t('module'), testTipiX, tableTop + 8);
+    addText(t('kilometre'), kilometreX, tableTop + 8);
 
-    // Veriler
-    let currentY = tableTop + rowHeight;
+    // Satırlar
+    let y = tableTop + headerHeight;
     doc.setFont("helvetica", "normal");
 
+    const newPageWithHeader = () => {
+      doc.addPage();
+      y = 20;
+      // yeni sayfada başlık şeridi
+      doc.setFillColor(240, 240, 240);
+      doc.rect(tableLeft, y, tableWidth, headerHeight, 'F');
+      doc.setFont("helvetica", "bold");
+      addText(t('module'), testTipiX, y + 8);
+      addText(t('kilometre'), kilometreX, y + 8);
+      y += headerHeight;
+      doc.setFont("helvetica", "normal");
+    };
+
     tests.forEach((test) => {
-      if (currentY > doc.internal.pageSize.height - 20) {
-        doc.addPage();
-        currentY = 20;
-      }
+      if (y > doc.internal.pageSize.height - 20) newPageWithHeader();
 
-      // Test tipi ismini çok satırlı olarak göster
       const testTipiText = test.kontrolmod || '';
-      const testTipiMaxWidth = testTipiColWidth - 5; // Sütun genişliği - padding
-      
-      // jsPDF'in splitTextToSize fonksiyonunu kullanarak metni böl
-      const splitTestTipi = doc.splitTextToSize(testTipiText, testTipiMaxWidth);
-      const lineHeight = 4; // Satır arası yükseklik
-      
-      // Test tipi ismini çok satırlı olarak yaz
-      splitTestTipi.forEach((line: string, index: number) => {
-        addText(line, testTipiStart, currentY + 10 + (index * lineHeight));
-      });
-      
-      // Kilometre değerini de çok satırlı olarak göster
       const kilometreText = test.km || '';
-      const kilometreMaxWidth = kilometreColWidth - 5; // Sütun genişliği - padding
-      const splitKilometre = doc.splitTextToSize(kilometreText, kilometreMaxWidth);
-      
-      // Kilometre değerini çok satırlı olarak yaz
-      splitKilometre.forEach((line: string, index: number) => {
-        addText(line, kilometreStart, currentY + 10 + (index * lineHeight));
-      });
 
-      // Satır yüksekliğini en uzun çok satırlı metne göre ayarla
-      const testTipiHeight = splitTestTipi.length * lineHeight;
-      const kilometreHeight = splitKilometre.length * lineHeight;
-      const maxTextHeight = Math.max(testTipiHeight, kilometreHeight, 8);
-      currentY += Math.max(rowHeight, maxTextHeight + 2);
+      // İçerik genişlikleri (her hücrenin iç kısmı)
+      const testTipiInnerW = testTipiColWidth - padX * 2;
+      const kilometreInnerW = kilometreColWidth - padX * 2;
+
+      const testTipiLines = doc.splitTextToSize(testTipiText, testTipiInnerW);
+      const kilometreLines = doc.splitTextToSize(kilometreText, kilometreInnerW);
+
+      // Hücrelere yaz
+      testTipiLines.forEach((line: string, i: number) => addText(line, testTipiX, y + padY + i * lineHeight));
+      kilometreLines.forEach((line: string, i: number) => addText(line, kilometreX, y + padY + i * lineHeight));
+
+      // Satır yüksekliği: en uzun hücreye göre + padding
+      const contentHeights = [
+        testTipiLines.length * lineHeight,
+        kilometreLines.length * lineHeight,
+      ];
+      const rowHeight = Math.max(rowMinHeight, Math.max(...contentHeights) + padY + 2);
+
+      y += rowHeight;
     });
 
     doc.save(`kilometre-hacker-${firstTest.plaka}-${formatDate(firstTest.tarih)}.pdf`);
