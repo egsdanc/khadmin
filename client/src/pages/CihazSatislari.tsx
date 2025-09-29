@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
-import { DateRange } from "react-day-picker";
 import {
   Card,
   CardContent,
@@ -634,14 +632,9 @@ export default function CihazSatislari() {
                       <FormItem>
                         <FormLabel>{t('payment-date')}</FormLabel>
                         <FormControl>
-                          <DatePickerWithRange
-                            selected={field.value ? { from: new Date(field.value), to: new Date(field.value) } : undefined}
-                            onSelect={(range) => {
-                              if (range?.from) {
-                                field.onChange(range.from.toISOString().split('T')[0]);
-                              }
-                            }}
-                            singleDate={true}
+                          <Input
+                            type="date"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -656,14 +649,9 @@ export default function CihazSatislari() {
                       <FormItem>
                         <FormLabel>{t('remaining-payment-date')}</FormLabel>
                         <FormControl>
-                          <DatePickerWithRange
-                            selected={field.value ? { from: new Date(field.value), to: new Date(field.value) } : undefined}
-                            onSelect={(range) => {
-                              if (range?.from) {
-                                field.onChange(range.from.toISOString().split('T')[0]);
-                              }
-                            }}
-                            singleDate={true}
+                          <Input
+                            type="date"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
