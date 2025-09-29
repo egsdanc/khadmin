@@ -200,7 +200,7 @@ export function KilometreDetailsModal({ isOpen, onClose, testId }: KilometreDeta
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Kilometre Detayları</DialogTitle>
+          <DialogTitle>{t('kilometre-hacker')} {t('details')}</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (

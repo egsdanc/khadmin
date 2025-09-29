@@ -544,7 +544,7 @@ const translations = {
   en: {
     'dashboard': 'Dashboard',
     'vin-hacker': 'VIN Hacker',
-    'kilometre-hacker': 'Mileage Hacker',
+    'kilometre-hacker': 'Kilometre Hacker',
     'reports': 'Reports',
     'settings': 'Settings',
     'test-date': 'Test Date',
@@ -862,7 +862,7 @@ const translations = {
         'Komisyon-Yonetimi': 'Commission Management',
         'Panel-Kullanicilari': 'Panel Users',
         'Program-Kullanicilari': 'Program Users',
-        'Kilometre-Hacker': 'Mileage Hacker',
+        'Kilometre-Hacker': 'Kilometre Hacker',
         'VIN-Hacker': 'VIN Hacker',
         'Cihaz-Satislari': 'Device Sales',
         'Cihaz-Satin-Al': 'Buy Device',
