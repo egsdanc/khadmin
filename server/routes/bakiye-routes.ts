@@ -3,7 +3,6 @@ import { bakiyeService } from '../services/bakiye-service';
 import { z } from 'zod';
 import { requireAuth } from '../auth';
 import { db } from "@db";
-import { db as customDb } from "../services/database-service";
 import { bakiye_komisyonlar, companies, bayiler } from "@db/schema";
 import { eq, and, sql, count } from "drizzle-orm";
 import type { PoolConnection } from "mysql2/promise";
@@ -208,7 +207,7 @@ router.get("/komisyon-ozet", async (req, res) => {
     console.log('Oluşturulan SQL sorgusu:', query);
     console.log('Parametre değerleri:', params);
 
-    const result = await customDb.execute(query, params);
+    const result = await db.execute(query, params);
     const rows = result[0];
 
     res.json({
@@ -260,7 +259,7 @@ router.get("/komisyonlar", async (req, res) => {
 
     const offset = (page - 1) * limit;
 
-    const komisyonlar = await customDb
+    const komisyonlar = await db
       .select({
         id: bakiye_komisyonlar.id,
         test_id: bakiye_komisyonlar.test_id,
@@ -284,7 +283,7 @@ router.get("/komisyonlar", async (req, res) => {
       .offset(offset);
 
     // Toplam kayıt sayısını al
-    const countResult = await customDb
+    const countResult = await db
       .select({
         count: sql<number>`count(*)`
       })
@@ -320,7 +319,7 @@ router.get('/user-balance', async (req, res) => {
     const user = JSON.parse(userParam);
 
     // Create base query
-    let query = customDb
+    let query = db
       .select({
         count: count(),
         totalBalance: sql<string>`COALESCE(SUM(bakiye), 0)`.mapWith(String)
@@ -404,7 +403,7 @@ router.get('/islem/:invoice_id', async (req, res) => {
       LIMIT 1
     `;
 
-    const rows = await customDb.executeQuery(query, [invoice_id]);
+    const rows = await db.executeQuery(query, [invoice_id]);
 
     if (!rows || (rows as any[]).length === 0) {
       return res.status(404).json({
