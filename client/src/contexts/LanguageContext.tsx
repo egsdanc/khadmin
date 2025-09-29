@@ -539,7 +539,22 @@ const translations = {
         'all-dealers-balance': 'Tüm bayilerin bakiyesi',
         'total-test-revenue': 'Toplam test geliri',
         'total-company-count': 'Toplam firma sayısı',
-        'vin-test-count': 'VIN test sayısı'
+        'vin-test-count': 'VIN test sayısı',
+        'country': 'Ülke',
+        'manage-registered-countries': 'Sistemde kayıtlı ülkeleri yönetin',
+        'select-country': 'Ülke seçiniz',
+        'delete-province': 'İli Sil',
+        'are-you-sure-delete-province': 'ilini silmek istediğinize emin misiniz?',
+        'province-deleted-successfully': 'İl başarıyla silindi',
+        'error-deleting-province': 'İl silinirken bir hata oluştu',
+        'edit-province': 'İli Düzenle',
+        'update-province': 'İli Güncelle',
+        'province-updated-successfully': 'İl başarıyla güncellendi',
+        'error-updating-province': 'İl güncellenirken bir hata oluştu',
+        'edit-district': 'İlçeyi Düzenle',
+        'update-district': 'İlçeyi Güncelle',
+        'district-updated-successfully': 'İlçe başarıyla güncellendi',
+        'error-updating-district': 'İlçe güncellenirken bir hata oluştu'
   },
   en: {
     'dashboard': 'Dashboard',
@@ -1070,7 +1085,22 @@ const translations = {
         'all-dealers-balance': 'All dealers balance',
         'total-test-revenue': 'Total test revenue',
         'total-company-count': 'Total company count',
-        'vin-test-count': 'VIN test count'
+        'vin-test-count': 'VIN test count',
+        'country': 'Country',
+        'manage-registered-countries': 'Manage registered countries',
+        'select-country': 'Select country',
+        'delete-province': 'Delete Province',
+        'are-you-sure-delete-province': 'Are you sure you want to delete this province?',
+        'province-deleted-successfully': 'Province deleted successfully',
+        'error-deleting-province': 'Error deleting province',
+        'edit-province': 'Edit Province',
+        'update-province': 'Update Province',
+        'province-updated-successfully': 'Province updated successfully',
+        'error-updating-province': 'Error updating province',
+        'edit-district': 'Edit District',
+        'update-district': 'Update District',
+        'district-updated-successfully': 'District updated successfully',
+        'error-updating-district': 'Error updating district'
   }
 };
 
