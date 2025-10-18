@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   PanelLeft,
   Building2,
@@ -42,6 +43,7 @@ export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [permissions, setPermissions] = useState<Permissions | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -79,105 +81,105 @@ export function Layout({ children }: LayoutProps) {
   const allMenuItems = [
     {
       href: "/panel",
-      label: "Panel",
+      label: t('dashboard'),
       icon: PanelLeft,
       permissionKey: "Panel",
       visible: permissions ? !!permissions["Panel"]?.view : isAdmin || isBayi
     },
     {
       href: "/firmalar",
-      label: "Firmalar",
+      label: t('companies'),
       icon: Building2,
       permissionKey: "Firmalar",
       visible: permissions ? !!permissions["Firmalar"]?.view : isAdmin
     },
     {
       href: "/bayiler",
-      label: "Bayiler",
+      label: t('dealers'),
       icon: Store,
       permissionKey: "Bayiler",
       visible: permissions ? !!permissions["Bayiler"]?.view : isAdmin
     },
     {
       href: "/bakiye",
-      label: "Bakiye Yönetimi",
+      label: t('balance-management'),
       icon: Wallet,
       permissionKey: "Bakiye-Yonetimi",
       visible: permissions ? !!permissions["Bakiye-Yonetimi"]?.view : true
     },
     {
       href: "/komisyon",
-      label: "Komisyon Yönetimi",
+      label: t('commission-management'),
       icon: Percent,
       permissionKey: "Komisyon-Yonetimi",
       visible: permissions ? !!permissions["Komisyon-Yonetimi"]?.view : isAdmin
     },
     {
       href: "/panel-users",
-      label: "Panel Kullanıcıları",
+      label: t('panel-users'),
       icon: Users,
       permissionKey: "Panel-Kullanicilari",
       visible: permissions ? !!permissions["Panel-Kullanicilari"]?.view : isAdmin
     },
     {
       href: "/kullanicilar",
-      label: "Program Kullanıcıları",
+      label: t('program-users'),
       icon: Users,
       permissionKey: "Program-Kullanicilari",
       visible: permissions ? !!permissions["Program-Kullanicilari"]?.view : isAdmin
     },
     {
       href: "/kilometre",
-      label: "Kilometre Hacker",
+      label: t('kilometre-hacker'),
       icon: Car,
       permissionKey: "Kilometre-Hacker",
       visible: permissions ? !!permissions["Kilometre-Hacker"]?.view : true
     },
     {
       href: "/vinreader",
-      label: "VIN Hacker",
+      label: t('vin-hacker'),
       icon: Car,
       permissionKey: "VIN-Hacker",
       visible: permissions ? !!permissions["VIN-Hacker"]?.view : true
     },
     {
       href: "/cihaz-satislari",
-      label: "Cihaz Satışları",
+      label: t('device-sales'),
       icon: ShoppingBag,
       permissionKey: "Cihaz-Satislari",
       visible: permissions ? !!permissions["Cihaz-Satislari"]?.view : isAdmin
     },
     {
       href: "/cihaz-satin-al",
-      label: "Cihaz Satın Al",
+      label: t('buy-device'),
       icon: PackageSearch,
       permissionKey: "Cihaz-Satin-Al",
       visible: permissions ? !!permissions["Cihaz-Satin-Al"]?.view : isAdmin
     },
     {
       href: "/roller",
-      label: "Roller",
+      label: t('roles'),
       icon: FileSpreadsheet,
       permissionKey: "Roller",
       visible: permissions ? !!permissions["Roller"]?.view : isAdmin
     },
     {
       href: "/raporlar",
-      label: "Raporlar",
+      label: t('reports'),
       icon: FileBarChart,
       permissionKey: "Raporlar",
       visible: permissions ? !!permissions["Raporlar"]?.view : true
     },
     {
       href: "/blog-ekle",
-      label: "Blog",
+      label: t('blog'),
       icon: PanelLeft,
       permissionKey: "Blog",
       visible: permissions ? !!permissions["Blog"]?.view : isSuperAdmin// Blog might not have a permission entry, default to isAdmin
     },
     {
       href: "/ayarlar",
-      label: "Ayarlar",
+      label: t('settings'),
       icon: Settings,
       permissionKey: "Ayarlar",
       visible: permissions ? !!permissions["Ayarlar"]?.view : true
@@ -259,7 +261,7 @@ export function Layout({ children }: LayoutProps) {
             onClick={logout}
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            <span>Çıkış Yap</span>
+            <span>{t('logout')}</span>
           </Button>
         </div>
       </aside>

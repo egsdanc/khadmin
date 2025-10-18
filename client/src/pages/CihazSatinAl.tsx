@@ -10,8 +10,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function CihazSatinAl() {
+  const { t } = useLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
@@ -22,14 +24,14 @@ export default function CihazSatinAl() {
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
               <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-rose-600">
-                Kilometre Hacker Cihazı
+                {t('mileage-hacker-device')}
               </h1>
               <p className="text-lg text-gray-600 mb-6">
-                Araçlarınızın kilometre verilerini güvenle tespit edin! İkinci el araç alım-satım süreçlerinde kilometre tespitini hızlı, güvenilir ve doğru bir şekilde yapmanızı sağlayan yenilikçi bir teknolojik çözüm.
+                {t('mileage-device-description')}
               </p>
               <div className="bg-white/80 backdrop-blur rounded-lg p-6 mb-6">
                 <div className="text-3xl font-bold text-red-600 mb-2">60.000 ₺</div>
-                <p className="text-sm text-gray-500">KDV Dahil</p>
+                <p className="text-sm text-gray-500">{t('vat-included')}</p>
               </div>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
@@ -37,12 +39,12 @@ export default function CihazSatinAl() {
                     size="lg"
                     className="w-full md:w-auto bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700"
                   >
-                    Hemen Satın Al
+                    {t('buy-now')}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
-                    <DialogTitle>Sipariş Bilgileri</DialogTitle>
+                    <DialogTitle>{t('order-information')}</DialogTitle>
                   </DialogHeader>
                   <OnlineSatisForm />
                 </DialogContent>
@@ -62,98 +64,97 @@ export default function CihazSatinAl() {
 
         {/* Ürün Açıklaması */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Neden Kilometre Hacker Cihazı?</h2>
+          <h2 className="text-2xl font-bold mb-6">{t('why-mileage-hacker-device')}</h2>
           <div className="prose max-w-none text-gray-600">
             <p className="mb-4">
-              Kilometre Hacker Cihazı, ikinci el araç alım-satım süreçlerinde kilometre tespitini hızlı, güvenilir ve doğru bir şekilde yapmanızı sağlayan yenilikçi bir teknolojik çözümdür. Hem bireysel kullanıcılar hem de profesyonel oto ekspertiz işletmeleri için tasarlanmıştır.
+              {t('device-description-1')}
             </p>
             <p className="mb-4">
-              Saniyeler içinde araç kilometre verilerini okur ve analiz eder. Motor, ABS, şanzıman, direksiyon ve diğer elektronik sistemlerden kilometre bilgilerini doğrudan okuma özelliğine sahiptir.
+              {t('device-description-2')}
             </p>
             <p>
-              Basit arayüzü sayesinde herkes tarafından kolayca kullanılabilir. Geniş araç yelpazesiyle uyumlu çalışır ve kapsamlı destek sunar.
+              {t('device-description-3')}
             </p>
           </div>
         </div>
 
         {/* Kimler İçin Uygun */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Kimler İçin Uygun?</h2>
+          <h2 className="text-2xl font-bold mb-6">{t('who-is-it-for')}</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <PackageItem
-              title="Bireysel Kullanıcılar"
-              description="İkinci el araç satın almadan önce aracın kilometre geçmişini tespit etmek isteyenler."
+              title={t('individual-users')}
+              description={t('individual-users-desc')}
             />
             <PackageItem
-              title="Oto Ekspertiz Firmaları"
-              description="Araç kilometre tespiti hizmetlerini güvenilir bir şekilde sunmayı hedefleyen profesyoneller."
+              title={t('auto-expertise-companies')}
+              description={t('auto-expertise-companies-desc')}
             />
             <PackageItem
-              title="Galeriler ve Araç Alım-Satım Firmaları"
-              description="İş süreçlerini kolaylaştırmak ve müşterilere güvenilir hizmet sağlamak isteyen işletmeler."
+              title={t('dealers-and-car-companies')}
+              description={t('dealers-and-car-companies-desc')}
             />
           </div>
         </div>
 
         {/* Özellikler */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Cihaz Özellikleri</h2>
+          <h2 className="text-2xl font-bold mb-6">{t('device-features')}</h2>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <FeatureItem text="Hatasız veri tespiti ve manipülasyon kontrolü" />
-              <FeatureItem text="Geniş araç yelpazesiyle uyumlu çalışır ve kapsamlı destek sunar" />
-              <FeatureItem text="Saniyeler içinde sonuç alma" />
-              <FeatureItem text="Motor, ABS, şanzıman, direksiyon ve diğer elektronik sistemlerden kilometre bilgilerini doğrudan okuma özelliği" />
-              <FeatureItem text="Profesyonel teknik destek" />
-              <FeatureItem text="Kullanıcı dostu arayüz" />
+              <FeatureItem text={t('feature-1')} />
+              <FeatureItem text={t('feature-2')} />
+              <FeatureItem text={t('feature-3')} />
+              <FeatureItem text={t('feature-4')} />
+              <FeatureItem text={t('feature-5')} />
+              <FeatureItem text={t('feature-6')} />
             </div>
             <div className="space-y-4">
-              <FeatureItem text="Gelişmiş güvenlik sistemi" />
-              <FeatureItem text="1 yıl garanti" />
-              <FeatureItem text="Hızlı işlem süresi" />
-              <FeatureItem text="Güvenli veri analizi" />
-              <FeatureItem text="7/24 teknik destek" />
-              <FeatureItem text="Ücretsiz kargo" />
+              <FeatureItem text={t('feature-7')} />
+              <FeatureItem text={t('feature-8')} />
+              <FeatureItem text={t('feature-9')} />
+              <FeatureItem text={t('feature-10')} />
+              <FeatureItem text={t('feature-11')} />
+              <FeatureItem text={t('feature-12')} />
             </div>
           </div>
         </div>
 
         {/* Kutu İçeriği */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Kutu İçeriği</h2>
+          <h2 className="text-2xl font-bold mb-6">{t('package-contents')}</h2>
           <div className="grid md:grid-cols-4 gap-6">
             <PackageItem
-              title="Kilometre Hacker OBD Cihazı"
-              description="Ana cihaz"
+              title={t('package-item-1')}
+              description={t('package-item-1-desc')}
             />
             <PackageItem
-              title="WiFi Dongle"
-              description="Kablosuz bağlantı aparatı"
+              title={t('package-item-2')}
+              description={t('package-item-2-desc')}
             />
             <PackageItem
-              title="Kullanım Kılavuzu"
-              description="Detaylı kullanım talimatları"
+              title={t('package-item-3')}
+              description={t('package-item-3-desc')}
             />
             <PackageItem
-              title="Lisans ve Teknik Destek"
-              description="1 yıl garantili lisans ve destek"
+              title={t('package-item-4')}
+              description={t('package-item-4-desc')}
             />
           </div>
         </div>
 
         {/* Garanti ve Destek */}
         <Card className="p-6 bg-gradient-to-br from-red-50 to-rose-50">
-          <h2 className="text-2xl font-bold mb-4">Garanti ve Teknik Destek</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('warranty-and-support')}</h2>
           <p className="text-gray-600 mb-4">
-            Cihazınız 1 yıl boyunca garantilidir. Teknik ekibimiz 7/24 yanınızda olup, WhatsApp üzerinden anlık destek sağlamaktadır.
-            Her yapılan sorgulama için %10 + KDV ücretlendirilirsiniz.
+            {t('warranty-description')}
           </p>
           <Button
             variant="outline"
             className="w-full md:w-auto"
             onClick={() => window.open('https://wa.me/905010321001', '_blank')}
           >
-            Teknik Destek
+            {t('technical-support')}
           </Button>
         </Card>
       </div>

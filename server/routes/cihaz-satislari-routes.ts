@@ -117,4 +117,132 @@ router.get("/toplam", async (req, res) => {
     });
   }
 });
+
+// Yeni cihaz satışı ekle
+router.post("/", async (req, res) => {
+  try {
+    const {
+      firma_id,
+      bayi_id,
+      toplam_tutar,
+      odenen_tutar,
+      teslim_durumu,
+      aciklama,
+      odeme_tarihi,
+      kalan_odeme_tarihi,
+      prim_yuzdesi
+    } = req.body;
+
+    // Kalan tutarı hesapla
+    const kalan_tutar = toplam_tutar - odenen_tutar;
+    
+    // Prim tutarını hesapla
+    const prim_tutari = (toplam_tutar * prim_yuzdesi) / 100;
+
+    const newSale = await db.insert(cihaz_satislari).values({
+      firma_id,
+      bayi_id,
+      toplam_tutar,
+      odenen_tutar,
+      kalan_tutar,
+      teslim_durumu,
+      aciklama,
+      odeme_tarihi: odeme_tarihi ? new Date(odeme_tarihi) : null,
+      kalan_odeme_tarihi: kalan_odeme_tarihi ? new Date(kalan_odeme_tarihi) : null,
+      prim_yuzdesi,
+      prim_tutari
+    });
+
+    res.json({
+      success: true,
+      message: "Cihaz satışı başarıyla eklendi",
+      data: newSale
+    });
+  } catch (error) {
+    console.error("Cihaz satışı eklenirken hata:", error);
+    res.status(500).json({
+      success: false,
+      message: "Cihaz satışı eklenirken bir hata oluştu"
+    });
+  }
+});
+
+// Cihaz satışını güncelle
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      firma_id,
+      bayi_id,
+      toplam_tutar,
+      odenen_tutar,
+      teslim_durumu,
+      aciklama,
+      odeme_tarihi,
+      kalan_odeme_tarihi,
+      prim_yuzdesi
+    } = req.body;
+
+    // Kalan tutarı hesapla
+    const kalan_tutar = toplam_tutar - odenen_tutar;
+    
+    // Prim tutarını hesapla
+    const prim_tutari = (toplam_tutar * prim_yuzdesi) / 100;
+
+    await db
+      .update(cihaz_satislari)
+      .set({
+        firma_id,
+        bayi_id,
+        toplam_tutar,
+        odenen_tutar,
+        kalan_tutar,
+        teslim_durumu,
+        aciklama,
+        odeme_tarihi: odeme_tarihi ? new Date(odeme_tarihi) : null,
+        kalan_odeme_tarihi: kalan_odeme_tarihi ? new Date(kalan_odeme_tarihi) : null,
+        prim_yuzdesi,
+        prim_tutari,
+        updated_at: new Date()
+      })
+      .where(eq(cihaz_satislari.id, parseInt(id)));
+
+    res.json({
+      success: true,
+      message: "Cihaz satışı başarıyla güncellendi"
+    });
+  } catch (error) {
+    console.error("Cihaz satışı güncellenirken hata:", error);
+    res.status(500).json({
+      success: false,
+      message: "Cihaz satışı güncellenirken bir hata oluştu"
+    });
+  }
+});
+
+// Cihaz satışını sil
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await db
+      .update(cihaz_satislari)
+      .set({
+        deleted_at: new Date()
+      })
+      .where(eq(cihaz_satislari.id, parseInt(id)));
+
+    res.json({
+      success: true,
+      message: "Cihaz satışı başarıyla silindi"
+    });
+  } catch (error) {
+    console.error("Cihaz satışı silinirken hata:", error);
+    res.status(500).json({
+      success: false,
+      message: "Cihaz satışı silinirken bir hata oluştu"
+    });
+  }
+});
+
 export default router;

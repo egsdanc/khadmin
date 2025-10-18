@@ -33,6 +33,7 @@ import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { CompanyDialog } from "@/components/CompanyDialog";
 import { CompanyEditDialog } from "@/components/CompanyEditDialog";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Company {
   id: number;
@@ -60,6 +61,7 @@ interface ApiResponse {
 }
 
 export default function FirmalarPage() {
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState<"firma_unvan" | "vergi_no">("firma_unvan");
   const [currentPage, setCurrentPage] = useState(1);
@@ -81,7 +83,7 @@ export default function FirmalarPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Firma silinirken bir hata oluştu");
+        throw new Error(t('error-deleting-company'));
       }
 
       return response.json();
@@ -89,13 +91,13 @@ export default function FirmalarPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
       toast({
-        title: "Başarılı",
-        description: "Firma başarıyla silindi",
+        title: t('success'),
+        description: t('company-deleted-successfully'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Hata",
+        title: t('error'),
         description: error.message,
         variant: "destructive",
       });
@@ -105,7 +107,7 @@ export default function FirmalarPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-48">
-        <div className="text-lg text-muted-foreground">Yükleniyor...</div>
+        <div className="text-lg text-muted-foreground">{t('loading')}</div>
       </div>
     );
   }
@@ -114,7 +116,7 @@ export default function FirmalarPage() {
     return (
       <div className="flex items-center justify-center h-48">
         <div className="text-lg text-red-500">
-          Veri yüklenirken bir hata oluştu: {(error as Error).message}
+          {t('error-loading-data')}: {(error as Error).message}
         </div>
       </div>
     );
@@ -140,11 +142,11 @@ export default function FirmalarPage() {
       <div className="space-y-2 px-4 sm:px-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Firmalar</h1>
-            <p className="text-muted-foreground">Firmaları görüntüle, düzenle ve yönet</p>
+            <h1 className="text-3xl font-bold tracking-tight">{t('companies')}</h1>
+            <p className="text-muted-foreground">{t('companies-description')}</p>
           </div>
           <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Firma Ekle
+            <Plus className="mr-2 h-4 w-4" /> {t('add-company')}
           </Button>
         </div>
       </div>
@@ -159,11 +161,11 @@ export default function FirmalarPage() {
                   onValueChange={(value: "firma_unvan" | "vergi_no") => setFilterBy(value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Filtre seçin" />
+                    <SelectValue placeholder={t('select-filter')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="firma_unvan">Firma Ünvanı</SelectItem>
-                    <SelectItem value="vergi_no">Vergi No</SelectItem>
+                    <SelectItem value="firma_unvan">{t('company-title')}</SelectItem>
+                    <SelectItem value="vergi_no">{t('tax-number')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -171,8 +173,8 @@ export default function FirmalarPage() {
                 <Input
                   placeholder={
                     filterBy === "firma_unvan"
-                      ? "Firma ünvanı ile ara..."
-                      : "Vergi no ile ara..."
+                      ? t('search-by-company-title')
+                      : t('search-by-tax-number')
                   }
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -186,15 +188,15 @@ export default function FirmalarPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-20">No</TableHead>
-                        <TableHead className="whitespace-nowrap">Firma Adı</TableHead>
-                        <TableHead className="whitespace-nowrap">Firma Ünvanı</TableHead>
-                        <TableHead className="hidden md:table-cell whitespace-nowrap">Email</TableHead>
-                        <TableHead className="hidden sm:table-cell whitespace-nowrap">Telefon</TableHead>
-                        <TableHead className="hidden lg:table-cell whitespace-nowrap">Vergi No</TableHead>
-                        <TableHead className="whitespace-nowrap">Durum</TableHead>
-                        <TableHead className="hidden md:table-cell whitespace-nowrap">Oluşturulma</TableHead>
-                        <TableHead className="text-right">İşlemler</TableHead>
+                        <TableHead className="w-20">{t('no')}</TableHead>
+                        <TableHead className="whitespace-nowrap">{t('company-name')}</TableHead>
+                        <TableHead className="whitespace-nowrap">{t('company-title')}</TableHead>
+                        <TableHead className="hidden md:table-cell whitespace-nowrap">{t('email')}</TableHead>
+                        <TableHead className="hidden sm:table-cell whitespace-nowrap">{t('phone')}</TableHead>
+                        <TableHead className="hidden lg:table-cell whitespace-nowrap">{t('tax-number')}</TableHead>
+                        <TableHead className="whitespace-nowrap">{t('status')}</TableHead>
+                        <TableHead className="hidden md:table-cell whitespace-nowrap">{t('created-at')}</TableHead>
+                        <TableHead className="text-right">{t('actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -224,7 +226,7 @@ export default function FirmalarPage() {
                                   : "bg-red-100 text-red-800"
                               }`}
                             >
-                              {company.durum === "active" ? "Aktif" : "Pasif"}
+                              {company.durum === "active" ? t('active') : t('inactive')}
                             </span>
                           </TableCell>
                           <TableCell className="hidden md:table-cell whitespace-nowrap">
@@ -260,7 +262,7 @@ export default function FirmalarPage() {
 
             <div className="flex items-center justify-between px-4 py-4 border-t">
               <div className="text-sm text-muted-foreground">
-                Toplam {filteredCompanies.length} kayıt ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredCompanies.length)} arası)
+                {t('total')} {filteredCompanies.length} {t('records')} ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredCompanies.length)} {t('range')})
               </div>
               <div className="flex gap-2">
                 <Button
@@ -270,7 +272,7 @@ export default function FirmalarPage() {
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  Önceki
+                  {t('previous')}
                 </Button>
                 <div className="flex items-center gap-1">
                   {(() => {
@@ -326,7 +328,7 @@ export default function FirmalarPage() {
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  Sonraki
+                  {t('next')}
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
@@ -349,13 +351,13 @@ export default function FirmalarPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Firmayı silmek istediğinize emin misiniz?</AlertDialogTitle>
+            <AlertDialogTitle>{t('delete-company')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Bu işlem geri alınamaz. Firma ve ilişkili tüm veriler kalıcı olarak silinecektir.
+              {t('delete-company-confirmation')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deleteCompanyId) {
@@ -365,7 +367,7 @@ export default function FirmalarPage() {
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? "Siliniyor..." : "Sil"}
+              {deleteMutation.isPending ? t('deleting') : t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

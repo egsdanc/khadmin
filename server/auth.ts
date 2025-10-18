@@ -95,7 +95,7 @@ export function setupAuth(app: Express) {
         connection = await db.getConnection();
 
         const [rows] = await connection.execute(
-          'SELECT * FROM panel_users WHERE email = ? AND deleted_at IS NULL LIMIT 1',
+          'SELECT *, language_preference FROM panel_users WHERE email = ? AND deleted_at IS NULL LIMIT 1',
           [email]
         );
 
@@ -106,14 +106,19 @@ export function setupAuth(app: Express) {
           return done(null, false, { message: "Kullanıcı bulunamadı" });
         }
 
-        const user = users[0] as DatabaseUser;
+        const user = users[0] as DatabaseUser & { language_preference: string };
 
         if (password !== user.password) {
           console.log("[Auth] Invalid password");
           return done(null, false, { message: "Hatalı şifre" });
         }
 
-        console.log("[Auth] Login successful:", { userId: user.id, email: user.email, role: user.role });
+        console.log("[Auth] Login successful:", { 
+          userId: user.id, 
+          email: user.email, 
+          role: user.role,
+          language: user.language_preference || 'tr'
+        });
         const { password: _, deleted_at: __, ...safeUser } = user;
         return done(null, safeUser);
       } catch (err) {

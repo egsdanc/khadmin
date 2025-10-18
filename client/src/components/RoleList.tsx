@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoleDialog } from "./RoleDialog";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Role {
   id: number;
@@ -31,6 +32,7 @@ interface RolesResponse {
 }
 
 export function RoleList() {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,14 +56,14 @@ export function RoleList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roles"] });
       toast({
-        title: "Başarılı",
-        description: "Rol başarıyla silindi",
+        title: t('success'),
+        description: t('role-successfully-deleted'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Hata",
-        description: `Rol silinirken bir hata oluştu: ${error}`,
+        title: t('error'),
+        description: `${t('error-deleting-role')}: ${error}`,
         variant: "destructive",
       });
     },
@@ -70,7 +72,7 @@ export function RoleList() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-lg text-muted-foreground">Yükleniyor...</div>
+        <div className="text-lg text-muted-foreground">{t('loading')}</div>
       </div>
     );
   }
@@ -78,7 +80,7 @@ export function RoleList() {
   if (error) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-lg text-red-500">Hata: {(error as Error).message}</div>
+        <div className="text-lg text-red-500">{t('error')}: {(error as Error).message}</div>
       </div>
     );
   }
@@ -95,9 +97,9 @@ export function RoleList() {
     <Card>
       <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0 pb-4 px-6">
         <div>
-          <CardTitle>Roller</CardTitle>
+          <CardTitle>{t('roles')}</CardTitle>
           <CardDescription>
-            Sistemdeki kullanıcı rollerini ve izinlerini yönetin
+            {t('manage-user-roles-and-permissions')}
           </CardDescription>
         </div>
         <RoleDialog />
@@ -107,9 +109,9 @@ export function RoleList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Rol Adı</TableHead>
-                <TableHead className="hidden sm:table-cell">Oluşturulma Tarihi</TableHead>
-                <TableHead className="text-right">İşlemler</TableHead>
+                <TableHead>{t('role-name')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('creation-date')}</TableHead>
+                <TableHead className="text-right">{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -129,7 +131,7 @@ export function RoleList() {
                       }}
                     >
                       <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Düzenle</span>
+                      <span className="sr-only">{t('edit')}</span>
                     </Button>
                     <Button
                       variant="ghost"
@@ -137,14 +139,14 @@ export function RoleList() {
                       className="h-8 w-8 p-0"
                       onClick={() => {
                         if (
-                          confirm("Bu rolü silmek istediğinizden emin misiniz?")
+                          confirm(t('are-you-sure-delete-role'))
                         ) {
                           deleteRoleMutation.mutate(role.id);
                         }
                       }}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
-                      <span className="sr-only">Sil</span>
+                      <span className="sr-only">{t('delete')}</span>
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -155,7 +157,7 @@ export function RoleList() {
           {totalRecords > 0 && (
             <div className="flex items-center justify-between px-4 py-4 border-t">
               <div className="text-sm text-muted-foreground">
-                Toplam {totalRecords} kayıt ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalRecords)} arası)
+                {t('total')} {totalRecords} {t('records')} ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalRecords)} {t('range')})
               </div>
               <div className="flex gap-2">
                 <Button
@@ -165,7 +167,7 @@ export function RoleList() {
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  Önceki
+                  {t('previous')}
                 </Button>
                 <div className="flex items-center gap-1">
                   {(() => {
@@ -221,7 +223,7 @@ export function RoleList() {
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  Sonraki
+                  {t('next')}
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>

@@ -27,15 +27,16 @@ import { Switch } from "@/components/ui/switch";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Form şeması
 const formSchema = z.object({
-  isim: z.string().min(1, "İsim zorunludur").trim(),
-  macAdress: z.string().min(1, "MAC adresi zorunludur").trim(),
+  isim: z.string().min(1, "Name is required").trim(),
+  macAdress: z.string().min(1, "MAC address is required").trim(),
   firstlogin: z.number(),
   firma_id: z.number().nullable(),
   bayi_id: z.number().nullable(),
-  sifre: z.string().optional(), // Şifre alanını opsiyonel yap
+  sifre: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -81,6 +82,7 @@ interface ProgramUser {
 }
 
 export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -192,7 +194,7 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
         firstlogin: user.firstlogin || 0,
         firma_id: user.firma_id,
         bayi_id: user.bayi_id,
-        sifre: ""
+        sifre: user.sifre || ""
       });
 
       if (user.bayi_name) {
@@ -247,20 +249,20 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
       if (user?.id) {
         await queryClient.invalidateQueries({ queryKey: ['/api/kullanicilar'] });
         toast({
-          title: "Başarılı",
-          description: "Program kullanıcısı güncellendi",
+          title: t('success'),
+          description: t('program-user-updated-successfully'),
         });
       } else {
         toast({
-          title: "Başarılı",
-          description: "Program kullanıcısı eklendi",
+          title: t('success'),
+          description: t('program-user-added-successfully'),
         });
       }
       handleOpenChange(false);
     } catch (error: any) {
       console.error('Form gönderim hatası:', error);
       toast({
-        title: "Hata",
+        title: t('error'),
         description: error.message,
         variant: "destructive",
       });
@@ -273,9 +275,9 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Program Kullanıcısını {user ? 'Düzenle' : 'Ekle'}</DialogTitle>
+          <DialogTitle>{t('program-user')} {user ? t('edit') : t('add')}</DialogTitle>
           <DialogDescription>
-            Lütfen program kullanıcı bilgilerini eksiksiz ve doğru doldurunuz.
+            {t('fill-program-user-info-completely')}
           </DialogDescription>
         </DialogHeader>
 
@@ -286,7 +288,7 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
               name="isim"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>İsim</FormLabel>
+                  <FormLabel>{t('name')}</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -300,7 +302,7 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
               name="macAdress"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>MAC Adresi</FormLabel>
+                  <FormLabel>{t('mac-address')}</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -315,13 +317,13 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Şifre {user?.id && "(Boş bırakılırsa değişmez)"}
+                    {t('password')} {user?.id && `(${t('leave-empty-to-keep-current')})`}
                   </FormLabel>
                   <FormControl>
                     <Input
                       type="text"
                       {...field}
-                      placeholder={user ? "Şifre giriniz" : "Yeni şifre giriniz"}
+                      placeholder={user ? t('enter-password') : t('enter-new-password')}
                     />
                   </FormControl>
                   <FormMessage />
@@ -334,7 +336,7 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
               name="firstlogin"
               render={({ field }) => (
                 <FormItem className="flex items-center gap-2">
-                  <FormLabel>İlk Giriş</FormLabel>
+                  <FormLabel>{t('first-login')}</FormLabel>
                   <FormControl>
                     <Switch
                       checked={field.value === 1}
@@ -342,7 +344,7 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
                     />
                   </FormControl>
                   <span className="text-sm text-muted-foreground">
-                    {field.value === 1 ? 'Yapıldı' : 'Yapılmadı'}
+                    {field.value === 1 ? t('done') : t('not-done')}
                   </span>
                   <FormMessage />
                 </FormItem>
@@ -354,7 +356,7 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
               name="firma_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Firma</FormLabel>
+                  <FormLabel>{t('company')}</FormLabel>
                   <Select
                     onValueChange={(value) => {
                       const numericValue = value ? parseInt(value) : null;
@@ -367,7 +369,7 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Firma Seçiniz" />
+                        <SelectValue placeholder={t('select-company')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -388,7 +390,7 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
               name="bayi_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bayi</FormLabel>
+                  <FormLabel>{t('dealer')}</FormLabel>
                   <Popover open={bayiSearchOpen} onOpenChange={setBayiSearchOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -398,20 +400,20 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
                           className="w-full justify-between"
                           disabled={!selectedFirmaId}
                         >
-                          {selectedBayiName || "Bayi Seçiniz"}
+                          {selectedBayiName || t('select-dealer')}
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-[300px] p-0">
                       <Command>
                         <CommandInput
-                          placeholder="Bayi ara..."
+                          placeholder={t('search-dealer')}
                           value={bayiSearchTerm}
                           onValueChange={setBayiSearchTerm}
                         />
                         <ScrollArea className="h-[200px]">
                           {filteredDealers.length === 0 ? (
-                            <CommandEmpty>Bayi bulunamadı</CommandEmpty>
+                            <CommandEmpty>{t('dealer-not-found')}</CommandEmpty>
                           ) : (
                             <CommandGroup>
                               {filteredDealers.map((dealer: Dealer) => (
@@ -445,11 +447,11 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
               >
-                İptal
+                {t('cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {user ? 'Kaydet' : 'Ekle'}
+                {user ? t('save') : t('add')}
               </Button>
             </DialogFooter>
           </form>

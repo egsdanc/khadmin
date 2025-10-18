@@ -47,40 +47,174 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Plus, Trash2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Edit, X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-// Form şemaları
+// Types
+interface Ulke {
+  id: number;
+  ulke_adi: string;
+  ulke_kodu: string;
+  telefon_kodu: string;
+}
+
+interface Il {
+  id: number;
+  il: string;
+  ulke_id: number;
+}
+
+interface Ilce {
+  id: number;
+  ilce: string;
+  il_id: number;
+}
+
+// Form schemas
+const ulkeSchema = z.object({
+  ulke_adi: z.string().min(1, "Ülke adı gereklidir"),
+});
+
 const ilSchema = z.object({
   il: z.string().min(1, "İl adı gereklidir"),
+  ulke_id: z.number().min(1, "Ülke seçimi gereklidir"),
 });
 
 const ilceSchema = z.object({
   ilce: z.string().min(1, "İlçe adı gereklidir"),
-  il_id: z.string().min(1, "İl seçimi gereklidir"),
+  il_id: z.number().min(1, "İl seçimi gereklidir"),
 });
 
-type Il = {
-  id: number;
-  il: string;
-  ilceler: { id: number; ilce: string }[];
+// API functions
+const fetchUlkeler = async (): Promise<Ulke[]> => {
+  const response = await fetch("/api/ulkeler");
+  if (!response.ok) throw new Error("Ülkeler yüklenemedi");
+  const result = await response.json();
+  return result.data;
+};
+
+const fetchIller = async (ulkeId: number): Promise<Il[]> => {
+  const response = await fetch(`/api/ulkeler/${ulkeId}/iller`);
+  if (!response.ok) throw new Error("İller yüklenemedi");
+  const result = await response.json();
+  return result.data;
+};
+
+const fetchIlceler = async (ulkeId: number, ilId: number): Promise<Ilce[]> => {
+  const response = await fetch(`/api/ulkeler/${ulkeId}/iller/${ilId}/ilceler`);
+  if (!response.ok) throw new Error("İlçeler yüklenemedi");
+  const result = await response.json();
+  return result.data;
+};
+
+const createIl = async (data: { il: string; ulke_id: number }) => {
+  const response = await fetch("/api/il", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("İl eklenemedi");
+  return response.json();
+};
+
+const createIlce = async (data: { ilce: string; il_id: number }) => {
+  const response = await fetch("/api/ilce", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("İlçe eklenemedi");
+  return response.json();
+};
+
+const deleteIlce = async (id: number) => {
+  const response = await fetch(`/api/ilce/${id}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) throw new Error("İlçe silinemedi");
+  return response.json();
+};
+
+const deleteIl = async (id: number) => {
+  const response = await fetch(`/api/ulkeler/iller/${id}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) throw new Error("İl silinemedi");
+  return response.json();
+};
+
+const deleteIlceNew = async (ilId: number, ilceId: number) => {
+  const response = await fetch(`/api/ulkeler/iller/${ilId}/ilceler/${ilceId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) throw new Error("İlçe silinemedi");
+  return response.json();
+};
+
+const updateIl = async (id: number, data: { il: string }) => {
+  const response = await fetch(`/api/ulkeler/iller/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("İl güncellenemedi");
+  return response.json();
+};
+
+const updateIlce = async (ilId: number, ilceId: number, data: { ilce: string }) => {
+  const response = await fetch(`/api/ulkeler/iller/${ilId}/ilceler/${ilceId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("İlçe güncellenemedi");
+  return response.json();
 };
 
 export default function LocationSettings() {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // State
+  const [selectedUlke, setSelectedUlke] = useState<Ulke | null>(null);
   const [selectedIl, setSelectedIl] = useState<Il | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isIlDialogOpen, setIsIlDialogOpen] = useState(false);
   const [isIlceDialogOpen, setIsIlceDialogOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [ilceCurrentPage, setIlceCurrentPage] = useState(1);
-  const [ilceToDelete, setIlceToDelete] = useState<{ id: number; ilce: string } | null>(null);
-  const itemsPerPage = 10;
-  const ilceItemsPerPage = 10;
+  const [ilceToDelete, setIlceToDelete] = useState<Ilce | null>(null);
+  const [ilToDelete, setIlToDelete] = useState<Il | null>(null);
+  const [editingIl, setEditingIl] = useState<Il | null>(null);
+  const [editingIlce, setEditingIlce] = useState<Ilce | null>(null);
 
+  // Queries
+  const { data: ulkeler = [], isLoading: ulkelerLoading } = useQuery({
+    queryKey: ["ulkeler"],
+    queryFn: fetchUlkeler,
+  });
+
+  const { data: iller = [], isLoading: illerLoading } = useQuery({
+    queryKey: ["iller", selectedUlke?.id],
+    queryFn: () => selectedUlke ? fetchIller(selectedUlke.id) : Promise.resolve([]),
+    enabled: !!selectedUlke,
+  });
+
+  const { data: ilceler = [], isLoading: ilcelerLoading } = useQuery({
+    queryKey: ["ilceler", selectedUlke?.id, selectedIl?.id],
+    queryFn: () => selectedUlke && selectedIl ? fetchIlceler(selectedUlke.id, selectedIl.id) : Promise.resolve([]),
+    enabled: !!selectedUlke && !!selectedIl,
+  });
+
+  // Forms
   const ilForm = useForm<z.infer<typeof ilSchema>>({
     resolver: zodResolver(ilSchema),
     defaultValues: {
       il: "",
+      ulke_id: selectedUlke?.id || 0,
     },
   });
 
@@ -88,489 +222,582 @@ export default function LocationSettings() {
     resolver: zodResolver(ilceSchema),
     defaultValues: {
       ilce: "",
-      il_id: "",
+      il_id: selectedIl?.id || 0,
     },
   });
 
-  // İlçe dialog'u açıldığında form değerlerini güncelle
+  // Update form defaults when selections change
   useEffect(() => {
-    if (isIlceDialogOpen && selectedIl) {
-      ilceForm.setValue("il_id", selectedIl.id.toString());
-    }
-  }, [isIlceDialogOpen, selectedIl, ilceForm]);
+    ilForm.setValue("ulke_id", selectedUlke?.id || 0);
+  }, [selectedUlke, ilForm]);
 
-  // Veri sorgulama optimizasyonu
-  const { data: locationResponse, isLoading } = useQuery<{success: boolean, data: Il[]}>({
-    queryKey: ["/api/il-ilce"],
-    staleTime: 5000, // 5 saniye cache
-    cacheTime: 10 * 60 * 1000, // 10 dakika cache
-  });
+  useEffect(() => {
+    ilceForm.setValue("il_id", selectedIl?.id || 0);
+  }, [selectedIl, ilceForm]);
 
-  const locations = locationResponse?.data || [];
-
-  // Il mutasyonları
+  // Mutations
   const createIlMutation = useMutation({
-    mutationFn: async (data: { il: string }) => {
-      const response = await fetch("/api/il", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("İl eklenirken bir hata oluştu");
-      return response.json();
-    },
+    mutationFn: createIl,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/il-ilce"] });
-      toast({ title: "Başarılı", description: "İl başarıyla eklendi" });
+      queryClient.invalidateQueries({ queryKey: ["iller", selectedUlke?.id] });
+      toast({
+        title: t('success'),
+        description: t('province-added-successfully'),
+      });
       setIsIlDialogOpen(false);
       ilForm.reset();
     },
+    onError: () => {
+      toast({
+        title: t('error'),
+        description: t('error-adding-province'),
+        variant: "destructive",
+      });
+    },
   });
 
-  // İlçe mutasyonları optimizasyonu
   const createIlceMutation = useMutation({
-    mutationFn: async (data: { ilce: string; il_id: string }) => {
-      const response = await fetch("/api/ilce", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+    mutationFn: createIlce,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ilceler", selectedUlke?.id, selectedIl?.id] });
+      toast({
+        title: t('success'),
+        description: t('district-added-successfully'),
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "İlçe eklenirken bir hata oluştu");
-      }
-      return response.json();
-    },
-    onSuccess: (_, variables) => {
-      // Hemen UI'ı güncelle
-      queryClient.setQueryData<{success: boolean, data: Il[]}>(["/api/il-ilce"], (oldData) => {
-        if (!oldData) return oldData;
-
-        const newData = {
-          ...oldData,
-          data: oldData.data.map(il => {
-            if (il.id === parseInt(variables.il_id)) {
-              const updatedIl = {
-                ...il,
-                ilceler: [
-                  ...il.ilceler,
-                  {
-                    id: Date.now(),
-                    ilce: variables.ilce
-                  }
-                ]
-              };
-              // selectedIl'i güncelle
-              if (selectedIl?.id === il.id) {
-                setSelectedIl(updatedIl);
-              }
-              return updatedIl;
-            }
-            return il;
-          })
-        };
-        return newData;
-      });
-
-      // Hemen toast göster ve formu kapat
-      toast({ title: "Başarılı", description: "İlçe başarıyla eklendi" });
       setIsIlceDialogOpen(false);
-      ilceForm.reset({ il_id: selectedIl?.id.toString() || "", ilce: "" });
-
-      // Arkaplanda verileri güncelle
-      queryClient.invalidateQueries({ queryKey: ["/api/il-ilce"] });
+      ilceForm.reset();
     },
-    onError: (error) => {
-      console.error("İlçe ekleme hatası:", error);
-      toast({ 
-        title: "Hata", 
-        description: error instanceof Error ? error.message : "İlçe eklenirken bir hata oluştu",
-        variant: "destructive"
+    onError: () => {
+      toast({
+        title: t('error'),
+        description: t('error-adding-district'),
+        variant: "destructive",
       });
-    }
+    },
   });
-
-  // Form submit handler'ı debounce et
-  const onIlceSubmit = useCallback(async (data: z.infer<typeof ilceSchema>) => {
-    if (createIlceMutation.isPending) return;
-    createIlceMutation.mutate(data);
-  }, [createIlceMutation]);
 
   const deleteIlceMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/ilce/${id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("İlçe silinirken bir hata oluştu");
-      return response.json();
-    },
-    onSuccess: (_, deletedId) => {
-      // Optimistik güncelleme
-      queryClient.setQueryData<{success: boolean, data: Il[]}>(["/api/il-ilce"], (oldData) => {
-        if (!oldData) return oldData;
-
-        const newData = {
-          ...oldData,
-          data: oldData.data.map(il => {
-            if (il.id === selectedIl?.id) {
-              const updatedIl = {
-                ...il,
-                ilceler: il.ilceler.filter(ilce => ilce.id !== deletedId)
-              };
-              // selectedIl'i güncelle
-              setSelectedIl(updatedIl);
-              return updatedIl;
-            }
-            return il;
-          })
-        };
-        return newData;
-      });
-
-      toast({ title: "Başarılı", description: "İlçe başarıyla silindi" });
-      setIlceToDelete(null);
-
-      // Arkaplanda verileri güncelle
-      queryClient.invalidateQueries({ queryKey: ["/api/il-ilce"] });
-    },
-    onError: (error) => {
-      console.error("İlçe silme hatası:", error);
-      toast({ 
-        title: "Hata", 
-        description: error instanceof Error ? error.message : "İlçe silinirken bir hata oluştu",
-        variant: "destructive"
+    mutationFn: deleteIlce,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ilceler", selectedUlke?.id, selectedIl?.id] });
+      toast({
+        title: t('success'),
+        description: t('district-deleted-successfully'),
       });
       setIlceToDelete(null);
-    }
+    },
+    onError: () => {
+      toast({
+        title: t('error'),
+        description: t('error-deleting-district'),
+        variant: "destructive",
+      });
+    },
   });
 
-  // İl sayfalama için veri hazırlama
-  const totalPages = Math.ceil(locations.length / itemsPerPage);
-  const paginatedLocations = locations.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const deleteIlMutation = useMutation({
+    mutationFn: deleteIl,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["iller", selectedUlke?.id] });
+      toast({
+        title: t('success'),
+        description: t('province-deleted-successfully'),
+      });
+      setIlToDelete(null);
+      setSelectedIl(null);
+    },
+    onError: () => {
+      toast({
+        title: t('error'),
+        description: t('error-deleting-province'),
+        variant: "destructive",
+      });
+    },
+  });
 
-  // İlçe sayfalama için veri hazırlama
-  const totalIlcePages = Math.ceil((selectedIl?.ilceler.length || 0) / ilceItemsPerPage);
-  const paginatedIlceler = selectedIl?.ilceler.slice(
-    (ilceCurrentPage - 1) * ilceItemsPerPage,
-    ilceCurrentPage * ilceItemsPerPage
-  ) || [];
+  const deleteIlceNewMutation = useMutation({
+    mutationFn: ({ ilId, ilceId }: { ilId: number; ilceId: number }) => deleteIlceNew(ilId, ilceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ilceler", selectedUlke?.id, selectedIl?.id] });
+      toast({
+        title: t('success'),
+        description: t('district-deleted-successfully'),
+      });
+      setIlceToDelete(null);
+    },
+    onError: () => {
+      toast({
+        title: t('error'),
+        description: t('error-deleting-district'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateIlMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { il: string } }) => updateIl(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["iller", selectedUlke?.id] });
+      toast({
+        title: t('success'),
+        description: t('province-updated-successfully'),
+      });
+      setEditingIl(null);
+      setIsIlDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: t('error'),
+        description: t('error-updating-province'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateIlceMutation = useMutation({
+    mutationFn: ({ ilId, ilceId, data }: { ilId: number; ilceId: number; data: { ilce: string } }) => updateIlce(ilId, ilceId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ilceler", selectedUlke?.id, selectedIl?.id] });
+      toast({
+        title: t('success'),
+        description: t('district-updated-successfully'),
+      });
+      setEditingIlce(null);
+      setIsIlceDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: t('error'),
+        description: t('error-updating-district'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handlers
+  const handleIlSubmit = (data: z.infer<typeof ilSchema>) => {
+    createIlMutation.mutate(data);
+  };
+
+  const handleIlceSubmit = (data: z.infer<typeof ilceSchema>) => {
+    createIlceMutation.mutate(data);
+  };
+
+  const handleDeleteIlce = () => {
+    if (ilceToDelete && selectedIl) {
+      deleteIlceNewMutation.mutate({ ilId: selectedIl.id, ilceId: ilceToDelete.id });
+    }
+  };
+
+  const handleDeleteIl = () => {
+    if (ilToDelete) {
+      deleteIlMutation.mutate(ilToDelete.id);
+    }
+  };
+
+  const handleUpdateIl = (data: z.infer<typeof ilSchema>) => {
+    if (editingIl) {
+      updateIlMutation.mutate({ id: editingIl.id, data });
+    }
+  };
+
+  const handleUpdateIlce = (data: z.infer<typeof ilceSchema>) => {
+    if (editingIlce && selectedIl) {
+      updateIlceMutation.mutate({ ilId: selectedIl.id, ilceId: editingIlce.id, data });
+    }
+  };
+
+  // Form'ları düzenleme modunda doldur
+  useEffect(() => {
+    if (editingIl) {
+      ilForm.setValue("il", editingIl.il);
+    }
+  }, [editingIl, ilForm]);
+
+  useEffect(() => {
+    if (editingIlce) {
+      ilceForm.setValue("ilce", editingIlce.ilce);
+    }
+  }, [editingIlce, ilceForm]);
+
+  // Pagination
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(ilceler.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentIlceler = ilceler.slice(startIndex, endIndex);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* İl Yönetimi */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div>
-              <CardTitle>İller</CardTitle>
-              <CardDescription>
-                Sistemde kayıtlı illeri yönetin
-              </CardDescription>
-            </div>
-            <Dialog open={isIlDialogOpen} onOpenChange={setIsIlDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Yeni İl
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Yeni İl Ekle</DialogTitle>
-                </DialogHeader>
-                <Form {...ilForm}>
-                  <form onSubmit={ilForm.handleSubmit((data) => createIlMutation.mutate(data))} className="space-y-4">
-                    <FormField
-                      control={ilForm.control}
-                      name="il"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>İl Adı</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="İl adını giriniz" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="flex justify-end">
-                      <Button type="submit">Ekle</Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>İl Adı</TableHead>
-                  <TableHead className="w-[80px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedLocations.map((il) => (
-                  <TableRow key={il.id} onClick={() => setSelectedIl(il)} className="cursor-pointer">
-                    <TableCell>{il.il}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteIlMutation.mutate(il.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {/* İl Sayfalama Kontrolleri */}
-            <div className="mt-4 border-t">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
-                <div className="text-sm text-muted-foreground order-2 sm:order-1">
-                  Toplam {locations.length} kayıt
-                  {locations.length > 0 && (
-                    <span className="hidden sm:inline">
-                      {" "}({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, locations.length)} arası gösteriliyor)
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 order-1 sm:order-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div className="flex items-center gap-1 min-w-[90px] justify-center">
-                    <span className="text-sm font-medium">{currentPage}</span>
-                    <span className="text-sm text-muted-foreground">/ {totalPages || 1}</span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* İlçe Yönetimi */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div>
-              <CardTitle>İlçeler</CardTitle>
-              <CardDescription>
-                {selectedIl ? `${selectedIl.il} iline ait ilçeleri yönetin` : 'Lütfen bir il seçin'}
-              </CardDescription>
-            </div>
-            <Dialog 
-              open={isIlceDialogOpen} 
-              onOpenChange={(open) => {
-                setIsIlceDialogOpen(open);
-                if (!open) {
-                  ilceForm.reset({ il_id: selectedIl?.id.toString() || "", ilce: "" });
-                }
+      {/* Ülkeler */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('country')}</CardTitle>
+          <CardDescription>{t('manage-registered-countries')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Select
+              value={selectedUlke?.id.toString() || ""}
+              onValueChange={(value) => {
+                const ulke = ulkeler.find(u => u.id === parseInt(value));
+                setSelectedUlke(ulke || null);
+                setSelectedIl(null);
+                setCurrentPage(1);
               }}
             >
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-2" disabled={!selectedIl}>
-                  <Plus className="h-4 w-4" />
-                  Yeni İlçe
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Yeni İlçe Ekle</DialogTitle>
-                </DialogHeader>
-                <Form {...ilceForm}>
-                  <form onSubmit={ilceForm.handleSubmit(onIlceSubmit)} className="space-y-4">
-                    <FormField
-                      control={ilceForm.control}
-                      name="il_id"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>İl</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={selectedIl?.id.toString()}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="İl seçiniz" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {locations?.map((il) => (
-                                <SelectItem key={il.id} value={il.id.toString()}>
-                                  {il.il}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={ilceForm.control}
-                      name="ilce"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>İlçe Adı</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="İlçe adını giriniz" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="flex justify-end">
-                      <Button 
-                        type="submit" 
-                        disabled={createIlceMutation.isPending}
-                      >
-                        {createIlceMutation.isPending ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Ekleniyor...
-                          </>
-                        ) : (
-                          "Ekle"
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
+              <SelectTrigger>
+                <SelectValue placeholder={t('select-country')} />
+              </SelectTrigger>
+              <SelectContent>
+                {ulkeler.map((ulke) => (
+                  <SelectItem key={ulke.id} value={ulke.id.toString()}>
+                    {ulke.ulke_adi}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* İller */}
+      {selectedUlke && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('province')}</CardTitle>
+            <CardDescription>
+              {selectedUlke.ulke_adi} {t('province')} {t('district')}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>İlçe Adı</TableHead>
-                  <TableHead className="w-[80px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedIlceler.map((ilce) => (
-                  <TableRow key={ilce.id}>
-                    <TableCell>{ilce.ilce}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIlceToDelete(ilce)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!selectedIl && (
-                  <TableRow>
-                    <TableCell colSpan={2} className="text-center text-muted-foreground">
-                      İlçeleri görüntülemek için bir il seçin
-                    </TableCell>
-                  </TableRow>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                {!editingIl && (
+                  <Button
+                    onClick={() => setIsIlDialogOpen(true)}
+                    disabled={!selectedUlke}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t('add-province')}
+                  </Button>
                 )}
-                {selectedIl && paginatedIlceler.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={2} className="text-center text-muted-foreground">
-                      Kayıtlı ilçe bulunmamaktadır
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-
-            {/* İlçe Sayfalama Kontrolleri */}
-            {selectedIl && selectedIl.ilceler.length > 0 && (
-              <div className="mt-4 border-t">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
-                  <div className="text-sm text-muted-foreground order-2 sm:order-1">
-                    Toplam {selectedIl.ilceler.length} kayıt
-                    <span className="hidden sm:inline">
-                      {" "}({(ilceCurrentPage - 1) * ilceItemsPerPage + 1} - {Math.min(ilceCurrentPage * ilceItemsPerPage, selectedIl.ilceler.length)} arası gösteriliyor)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 order-1 sm:order-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setIlceCurrentPage((prev) => Math.max(1, prev - 1))}
-                      disabled={ilceCurrentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="flex items-center gap-1 min-w-[90px] justify-center">
-                      <span className="text-sm font-medium">{ilceCurrentPage}</span>
-                      <span className="text-sm text-muted-foreground">/ {totalIlcePages || 1}</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setIlceCurrentPage((prev) => Math.min(totalIlcePages, prev + 1))}
-                      disabled={ilceCurrentPage === totalIlcePages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
               </div>
-            )}
+
+              {illerLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {iller.map((il) => (
+                    <div
+                      key={il.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div 
+                        className="flex-1 cursor-pointer"
+                        onClick={() => {
+                          setSelectedIl(il);
+                          setCurrentPage(1);
+                        }}
+                      >
+                        <span className="font-medium">{il.il}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingIl(il);
+                            setIsIlDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIlToDelete(il);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedIl(il);
+                            setCurrentPage(1);
+                          }}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
-      </div>
+      )}
 
-      {/* İlçe Silme Onay Dialog'u */}
-      <AlertDialog 
-        open={!!ilceToDelete} 
-        onOpenChange={(open) => !open && setIlceToDelete(null)}
-      >
+      {/* İlçeler */}
+      {selectedUlke && selectedIl && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('district')}</CardTitle>
+            <CardDescription>
+              {selectedIl.il} {t('district')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                {!editingIlce && (
+                  <Button
+                    onClick={() => setIsIlceDialogOpen(true)}
+                    disabled={!selectedIl}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t('add-district')}
+                  </Button>
+                )}
+              </div>
+
+              {ilcelerLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : ilceler.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  {t('no-districts-found')}
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('district-name')}</TableHead>
+                        <TableHead className="w-[100px]">{t('actions')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {currentIlceler.map((ilce) => (
+                        <TableRow key={ilce.id}>
+                          <TableCell>{ilce.ilce}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingIlce(ilce);
+                                  setIsIlceDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setIlceToDelete(ilce)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-500">
+                        {t('total')} {ilceler.length} {t('records')}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          {t('previous')}
+                        </Button>
+                        <span className="text-sm">
+                          {currentPage} / {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          {t('next')}
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* İl Ekleme Dialog */}
+      <Dialog open={isIlDialogOpen} onOpenChange={(open) => {
+        setIsIlDialogOpen(open);
+        if (!open) {
+          setEditingIl(null);
+          ilForm.reset();
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingIl ? t('edit-province') : t('add-province')}</DialogTitle>
+          </DialogHeader>
+          <Form {...ilForm}>
+            <form onSubmit={ilForm.handleSubmit(editingIl ? handleUpdateIl : handleIlSubmit)} className="space-y-4">
+              <FormField
+                control={ilForm.control}
+                name="il"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('province-name')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={t('enter-province-name')} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsIlDialogOpen(false);
+                  setEditingIl(null);
+                  ilForm.reset();
+                }}
+              >
+                {t('cancel')}
+              </Button>
+              <Button type="submit" disabled={createIlMutation.isPending || updateIlMutation.isPending}>
+                {(createIlMutation.isPending || updateIlMutation.isPending) ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                {editingIl ? t('update-province') : t('add-province')}
+              </Button>
+            </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* İlçe Ekleme Dialog */}
+      <Dialog open={isIlceDialogOpen} onOpenChange={(open) => {
+        setIsIlceDialogOpen(open);
+        if (!open) {
+          setEditingIlce(null);
+          ilceForm.reset();
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingIlce ? t('edit-district') : t('add-district')}</DialogTitle>
+          </DialogHeader>
+          <Form {...ilceForm}>
+            <form onSubmit={ilceForm.handleSubmit(editingIlce ? handleUpdateIlce : handleIlceSubmit)} className="space-y-4">
+              <FormField
+                control={ilceForm.control}
+                name="ilce"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('district-name')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={t('enter-district-name')} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsIlceDialogOpen(false);
+                  setEditingIlce(null);
+                  ilceForm.reset();
+                }}
+              >
+                {t('cancel')}
+              </Button>
+              <Button type="submit" disabled={createIlceMutation.isPending || updateIlceMutation.isPending}>
+                {(createIlceMutation.isPending || updateIlceMutation.isPending) ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                {editingIlce ? t('update-district') : t('add-district')}
+              </Button>
+            </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* İlçe Silme Dialog */}
+      <AlertDialog open={!!ilceToDelete} onOpenChange={() => setIlceToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>İlçeyi Sil</AlertDialogTitle>
+            <AlertDialogTitle>{t('delete-district')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {ilceToDelete?.ilce} ilçesini silmek istediğinize emin misiniz?
-              Bu işlem geri alınamaz.
+              {ilceToDelete?.ilce} {t('are-you-sure-delete-district')} {t('this-action-cannot-be-undone')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => ilceToDelete && deleteIlceMutation.mutate(ilceToDelete.id)}
+              onClick={handleDeleteIlce}
+              disabled={deleteIlceNewMutation.isPending}
             >
-              {deleteIlceMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Siliniyor...
-                </>
-              ) : (
-                "Sil"
-              )}
+              {deleteIlceNewMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              {t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* İl Silme Dialog */}
+      <AlertDialog open={!!ilToDelete} onOpenChange={() => setIlToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('delete-province')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {ilToDelete?.il} {t('are-you-sure-delete-province')} {t('this-action-cannot-be-undone')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteIl}
+              disabled={deleteIlMutation.isPending}
+            >
+              {deleteIlMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -141,6 +141,9 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
     let userObj;
     try {
       userObj = user ? JSON.parse(user as string) : null;
+      if (userObj?.user) {
+        userObj = userObj.user; // Doğrudan user nesnesine eriş
+      }
     } catch (e) {
       console.error("User parsing error:", e);
       return res.status(400).json({
@@ -151,6 +154,7 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
 
     // Eğer user objesi yoksa veya geçerli bir role içermiyorsa, erişimi reddet
     if (!userObj || !userObj.role) {
+      console.log("User objesi veya role bulunamadı:", userObj);
       return res.status(403).json({
         success: false,
         error: 'Yetkisiz erişim'
@@ -322,6 +326,32 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const testId = parseInt(req.params.id);
     console.log("VIN detayları getiriliyor:", testId);
+
+    // User parametresini kontrol et
+    const { user: userRaw } = req.query;
+    let userObj;
+
+    try {
+      userObj = userRaw ? JSON.parse(userRaw as string) : null;
+      if (userObj?.user) {
+        userObj = userObj.user; // Doğrudan user nesnesine eriş
+      }
+    } catch (e) {
+      console.error("User parsing error:", e);
+      return res.status(400).json({
+        success: false,
+        error: 'Geçersiz kullanıcı verisi'
+      });
+    }
+
+    // Eğer user objesi yoksa veya geçerli bir role içermiyorsa, erişimi reddet
+    if (!userObj || !userObj.role) {
+      console.log("User objesi veya role bulunamadı:", userObj);
+      return res.status(403).json({
+        success: false,
+        error: 'Yetkisiz erişim'
+      });
+    }
 
     connection = await db.getConnection();
     const [rows] = await connection.execute(`

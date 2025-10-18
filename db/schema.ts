@@ -140,6 +140,7 @@ export const panel_users = mysqlTable("panel_users", {
     sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`,
   ),
   deleted_at: timestamp("deleted_at"),
+  language_preference: varchar("language_preference", { length: 5 }).default("tr"),
 });
 
 export const bayiler = mysqlTable("bayiler", {
@@ -496,6 +497,56 @@ export const bakiyeHareketleriRelations = relations(bakiye_hareketleri, ({ one }
     fields: [bakiye_hareketleri.bayi_id],
     references: [bayiler.id],
   }),
+}));
+
+// Ülkeler tablosu
+export const ulkeler = mysqlTable("ulkeler", {
+  id: int("id").primaryKey().autoincrement(),
+  ulke_adi: varchar("ulke_adi", { length: 150 }).notNull(),
+  ulke_kodu: varchar("ulke_kodu", { length: 3 }).unique(),
+  telefon_kodu: varchar("telefon_kodu", { length: 10 }),
+  created_at: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updated_at: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
+});
+
+// İller tablosu
+export const iller = mysqlTable("iller", {
+  id: int("id").primaryKey().autoincrement(),
+  il: varchar("il", { length: 100 }).notNull(),
+  ulke_id: int("ulke_id").notNull(),
+  created_at: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updated_at: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
+  deleted_at: timestamp("deleted_at"),
+});
+
+// İlçeler tablosu
+export const ilceler = mysqlTable("ilceler", {
+  id: int("id").primaryKey().autoincrement(),
+  ilce: varchar("ilce", { length: 100 }).notNull(),
+  il_id: int("il_id").notNull(),
+  created_at: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updated_at: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
+  deleted_at: timestamp("deleted_at"),
+});
+
+// Relations
+export const illerRelations = relations(iller, ({ one, many }) => ({
+  ulke: one(ulkeler, {
+    fields: [iller.ulke_id],
+    references: [ulkeler.id],
+  }),
+  ilceler: many(ilceler),
+}));
+
+export const ilcelerRelations = relations(ilceler, ({ one }) => ({
+  il: one(iller, {
+    fields: [ilceler.il_id],
+    references: [iller.id],
+  }),
+}));
+
+export const ulkelerRelations = relations(ulkeler, ({ many }) => ({
+  iller: many(iller),
 }));
 
 export const insertBakiyeHareketleriSchema = createInsertSchema(bakiye_hareketleri);

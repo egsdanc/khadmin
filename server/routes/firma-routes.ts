@@ -344,6 +344,65 @@ router.get("/distribution", async (_req, res) => {
   }
 });
 
+// GET /api/firmalar/:id - Tek firma detayını getir
+router.get("/:id", async (req, res) => {
+  let connection;
+  try {
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Geçersiz firma ID'si"
+      });
+    }
+
+    connection = await db.getConnection();
+    const [firmaRows] = await connection.execute(
+      `SELECT 
+        id,
+        name,
+        firma_unvan,
+        email,
+        telefon,
+        adres,
+        vergi_dairesi,
+        vergi_no,
+        tc_no,
+        iban,
+        durum,
+        created_at,
+        updated_at
+       FROM firmalar 
+       WHERE id = ? AND deleted_at IS NULL`,
+      [id]
+    );
+
+    if (!firmaRows || !(firmaRows as any[]).length) {
+      return res.status(404).json({
+        success: false,
+        message: "Firma bulunamadı"
+      });
+    }
+
+    res.json({
+      success: true,
+      data: (firmaRows as any[])[0]
+    });
+
+  } catch (error) {
+    console.error('Firma getirilirken hata:', error);
+    res.status(500).json({
+      success: false,
+      message: "Firma getirilirken bir hata oluştu"
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
 router.get('/:id/name', async (req, res) => {
   try {
     const id = parseInt(req.params.id);

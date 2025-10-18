@@ -162,16 +162,26 @@ router.post("/", requireAuth, async (req, res) => {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // E-posta benzersizlik kontrolü
+    // E-posta benzersizlik kontrolü (tüm kullanıcılar dahil)
     const [existingUsers] = await connection.execute(
-      'SELECT id FROM panel_users WHERE email = ? AND deleted_at IS NULL',
+      'SELECT id, status, deleted_at FROM panel_users WHERE email = ?',
       [email]
     );
 
     if (Array.isArray(existingUsers) && existingUsers.length > 0) {
+      const existingUser = existingUsers[0] as any;
+      let statusMessage;
+      if (existingUser.deleted_at) {
+        statusMessage = "Bu e-posta adresi silinmiş bir kullanıcı tarafından kullanılıyor";
+      } else if (existingUser.status === 'inactive') {
+        statusMessage = "Bu e-posta adresi inactive bir kullanıcı tarafından kullanılıyor";
+      } else {
+        statusMessage = "Bu e-posta adresi zaten kullanılıyor";
+      }
+      
       return res.status(400).json({
         success: false,
-        message: "Bu e-posta adresi zaten kullanılıyor"
+        message: statusMessage
       });
     }
 
@@ -271,7 +281,7 @@ router.put("/:id", requireAuth, async (req, res) => {
 
     // Mevcut kullanıcıyı kontrol et
     const [existingUsers] = await connection.execute(
-      'SELECT id FROM panel_users WHERE id = ? AND deleted_at IS NULL',
+      'SELECT id, email FROM panel_users WHERE id = ? AND deleted_at IS NULL',
       [id]
     );
 
@@ -280,6 +290,33 @@ router.put("/:id", requireAuth, async (req, res) => {
         success: false,
         message: "Kullanıcı bulunamadı"
       });
+    }
+
+    const currentUser = existingUsers[0] as any;
+
+    // E-posta değişikliği kontrolü - eğer e-posta değiştiriliyorsa benzersizlik kontrolü yap (tüm kullanıcılar dahil)
+    if (email && email !== currentUser.email) {
+      const [emailCheck] = await connection.execute(
+        'SELECT id, status, deleted_at FROM panel_users WHERE email = ? AND id != ?',
+        [email, id]
+      );
+
+      if (Array.isArray(emailCheck) && emailCheck.length > 0) {
+        const existingUser = emailCheck[0] as any;
+        let statusMessage;
+        if (existingUser.deleted_at) {
+          statusMessage = "Bu e-posta adresi silinmiş bir kullanıcı tarafından kullanılıyor";
+        } else if (existingUser.status === 'inactive') {
+          statusMessage = "Bu e-posta adresi inactive bir kullanıcı tarafından kullanılıyor";
+        } else {
+          statusMessage = "Bu e-posta adresi zaten kullanılıyor";
+        }
+        
+        return res.status(400).json({
+          success: false,
+          message: statusMessage
+        });
+      }
     }
 
     // Güncelleme verilerini hazırla
@@ -421,6 +458,100 @@ router.delete("/:id", requireAuth, async (req, res) => {
       success: false,
       message: "Kullanıcı silinirken bir hata oluştu: " + (error as Error).message
     });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+// E-posta kontrolü
+router.get("/check-email", requireAuth, async (req, res) => {
+  let connection;
+  try {
+    const { email, excludeId } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "E-posta adresi gerekli"
+      });
+    }
+
+    connection = await db.getConnection();
+    
+    let query = 'SELECT id, status, deleted_at FROM panel_users WHERE email = ?';
+    let params: any[] = [email];
+    
+    if (excludeId) {
+      query += ' AND id != ?';
+      params.push(parseInt(excludeId as string));
+    }
+
+    const [results] = await connection.execute(query, params);
+    
+    console.log(`Email check for: ${email}, Results:`, results);
+    
+    const isEmailExists = Array.isArray(results) && results.length > 0;
+    
+    let message = "E-posta adresi kullanılabilir";
+    if (isEmailExists) {
+      const existingUser = results[0] as any;
+      if (existingUser.deleted_at) {
+        message = "Bu e-posta adresi silinmiş bir kullanıcı tarafından kullanılıyor";
+      } else if (existingUser.status === 'inactive') {
+        message = "Bu e-posta adresi inactive bir kullanıcı tarafından kullanılıyor";
+      } else {
+        message = "Bu e-posta adresi zaten kullanılıyor";
+      }
+    }
+    
+    console.log(`Email check result: exists=${isEmailExists}, message=${message}`);
+    
+    res.json({
+      success: true,
+      exists: isEmailExists,
+      message: message
+    });
+  } catch (error) {
+    console.error("E-posta kontrolü hatası:", error);
+    res.status(500).json({
+      success: false,
+      message: "E-posta kontrolü yapılırken bir hata oluştu: " + (error as Error).message
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+// Dil tercihini güncelle
+router.put("/language", requireAuth, async (req, res) => {
+  let connection;
+  try {
+    const { language } = req.body;
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    
+    if (!language || !['tr', 'en'].includes(language)) {
+      return res.status(400).json({ success: false, message: 'Invalid language' });
+    }
+    
+    connection = await db.getConnection();
+    
+    await connection.execute(
+      'UPDATE panel_users SET language_preference = ? WHERE id = ?',
+      [language, userId]
+    );
+    
+    res.json({ success: true, message: 'Language preference updated' });
+  } catch (error) {
+    console.error('Language update error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   } finally {
     if (connection) {
       connection.release();

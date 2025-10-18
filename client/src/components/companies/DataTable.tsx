@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { type Company } from "./Columns";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
@@ -25,6 +26,7 @@ interface DataTableProps<TData> {
 }
 
 export function DataTable<TData extends Company>({ columns, data }: DataTableProps<TData>) {
+  const { t } = useLanguage();
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const table = useReactTable({
@@ -79,7 +81,7 @@ export function DataTable<TData extends Company>({ columns, data }: DataTablePro
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  Kayıt bulunamadı.
+                  {t('no-records-found')}
                 </TableCell>
               </TableRow>
             )}
@@ -93,7 +95,7 @@ export function DataTable<TData extends Company>({ columns, data }: DataTablePro
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
         >
-          Önceki
+          {t('previous')}
         </Button>
         <Button
           variant="outline"
@@ -101,7 +103,7 @@ export function DataTable<TData extends Company>({ columns, data }: DataTablePro
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
         >
-          Sonraki
+          {t('next')}
         </Button>
       </div>
     </div>

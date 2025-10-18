@@ -27,7 +27,14 @@ export default defineConfig({
   },
   server: {
     host: true, // dış IP üzerinden erişimi aç
-    allowedHosts: ['admin.kilometrehacker.com'], // bu domain’e izin ver
-    port: 3001
+    allowedHosts: ['admin.kilometrehacker.com'], // bu domain'e izin ver
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   }
 });

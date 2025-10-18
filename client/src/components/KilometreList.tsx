@@ -22,6 +22,9 @@ import { KilometreDetailsModal } from "./KilometreDetailsModal";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
 
 interface KilometreRecord {
   id: number;
@@ -56,25 +59,25 @@ interface ApiResponse {
 }
 
 export function KilometreList() {
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [filterBy, setFilterBy] = useState<"plaka" | "marka">("plaka");
   const [selectedTestId, setSelectedTestId] = useState<number | null>(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const itemsPerPage = 10;
   const { user } = useAuth();
 
   const { data: response, isLoading } = useQuery<ApiResponse>({
-    queryKey: ["/api/kilometre", { page: currentPage, limit: itemsPerPage, startDate, endDate, search, filterBy }],
+    queryKey: ["/api/kilometre", { page: currentPage, limit: itemsPerPage, startDate: dateRange?.from?.toISOString().split('T')[0], endDate: dateRange?.to?.toISOString().split('T')[0], search, filterBy }],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: itemsPerPage.toString(),
       });
       params.append('user', JSON.stringify(user));
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
+      if (dateRange?.from) params.append('startDate', dateRange.from.toISOString().split('T')[0]);
+      if (dateRange?.to) params.append('endDate', dateRange.to.toISOString().split('T')[0]);
       if (search) params.append(filterBy, search);
 
       const response = await fetch(`/api/kilometre?${params.toString()}`);
@@ -93,7 +96,7 @@ export function KilometreList() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-48">
-        <div className="text-lg text-muted-foreground">Yükleniyor...</div>
+        <div className="text-lg text-muted-foreground">{t('loading')}</div>
       </div>
     );
   }
@@ -102,23 +105,11 @@ export function KilometreList() {
     <div className="p-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="space-y-2">
-          <Label htmlFor="startDate">Başlangıç Tarihi</Label>
-          <Input
-            id="startDate"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-full h-10"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="endDate">Bitiş Tarihi</Label>
-          <Input
-            id="endDate"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="w-full h-10"
+          <Label>{t('date-range')}</Label>
+          <DatePickerWithRange
+            date={dateRange}
+            setDate={setDateRange}
+            className="w-full"
           />
         </div>
         <div className="space-y-2">
@@ -127,28 +118,32 @@ export function KilometreList() {
             onClick={() => setCurrentPage(1)}
             className="w-full h-10 bg-[#0F1729] hover:bg-[#1a2436] text-white"
           >
-            Sorgula
+            {t('query')}
           </Button>
+        </div>
+        <div className="space-y-2">
+          <Label>&nbsp;</Label>
+          <div></div>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-end mb-4">
         <div className="w-full sm:w-auto">
-          <Label className="text-sm font-medium">Plaka/Model</Label>
+          <Label className="text-sm font-medium">{t('plate-model')}</Label>
           <Select value={filterBy} onValueChange={(value: "plaka" | "marka") => setFilterBy(value)}>
             <SelectTrigger className="w-full sm:w-[180px] h-11">
-              <SelectValue placeholder="Plaka" />
+              <SelectValue placeholder={t('plate')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="plaka">Plaka</SelectItem>
-              <SelectItem value="marka">Marka/Model</SelectItem>
+              <SelectItem value="plaka">{t('plate')}</SelectItem>
+              <SelectItem value="marka">{t('brand-model')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="w-full sm:w-auto flex-1">
-          <Label className="text-sm font-medium">Arama</Label>
+          <Label className="text-sm font-medium">{t('search')}</Label>
           <Input
-            placeholder={filterBy === "plaka" ? "Plaka ile ara..." : "Marka/Model ile ara..."}
+            placeholder={filterBy === "plaka" ? t('search-by-plate') : t('search-by-brand-model')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-11"
@@ -160,17 +155,17 @@ export function KilometreList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">No</TableHead>
-              <TableHead>Tarih</TableHead>
-              <TableHead>Plaka</TableHead>
-              <TableHead className="hidden md:table-cell">Marka/Model</TableHead>
-              <TableHead className="hidden md:table-cell">Şase No</TableHead>
-              <TableHead className="hidden md:table-cell">Motor No</TableHead>
-              <TableHead className="hidden md:table-cell">Firma</TableHead>
-              <TableHead className="hidden md:table-cell">Bayi</TableHead>
-              <TableHead className="text-right hidden md:table-cell">Gösterge KM</TableHead>
-              <TableHead className="text-right hidden md:table-cell">Ücret</TableHead>
-              <TableHead className="text-right">İşlemler</TableHead>
+              <TableHead className="w-[50px]">{t('no')}</TableHead>
+              <TableHead>{t('date')}</TableHead>
+              <TableHead>{t('plate')}</TableHead>
+              <TableHead className="hidden md:table-cell">{t('brand-model')}</TableHead>
+              <TableHead className="hidden md:table-cell">{t('chassis-number')}</TableHead>
+              <TableHead className="hidden md:table-cell">{t('engine-number')}</TableHead>
+              <TableHead className="hidden md:table-cell">{t('company')}</TableHead>
+              <TableHead className="hidden md:table-cell">{t('dealer')}</TableHead>
+              <TableHead className="text-right hidden md:table-cell">{t('odometer-km')}</TableHead>
+              <TableHead className="text-right hidden md:table-cell">{t('fee')}</TableHead>
+              <TableHead className="text-right">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -209,7 +204,7 @@ export function KilometreList() {
                         <path d="M12 16v-4" />
                         <path d="M12 8h.01" />
                       </svg>
-                      Detay
+                      {t('details')}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -217,9 +212,9 @@ export function KilometreList() {
             ) : (
               <TableRow>
                 <TableCell colSpan={11} className="h-24 text-center">
-                  {search || startDate || endDate ?
-                    "Arama kriterlerine uygun kayıt bulunamadı." :
-                    "Kayıtlı veri bulunamadı."
+                  {search || dateRange?.from || dateRange?.to ?
+                    t('no-records-found-matching-criteria') :
+                    t('no-records-found')
                   }
                 </TableCell>
               </TableRow>
@@ -230,7 +225,7 @@ export function KilometreList() {
         {response && response.pagination.total > 0 && (
           <div className="flex items-center justify-between px-4 py-4 border-t">
             <div className="text-sm text-muted-foreground">
-              Toplam {response.pagination.total} kayıt ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, response.pagination.total)} arası)
+              {t('total')} {response.pagination.total} {t('records')} ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, response.pagination.total)} {t('range')})
             </div>
             <div className="flex gap-2">
               <Button
@@ -240,7 +235,7 @@ export function KilometreList() {
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className="h-4 w-4 mr-1" />
-                Önceki
+                {t('previous')}
               </Button>
               <Button
                 variant="ghost"
@@ -248,7 +243,7 @@ export function KilometreList() {
                 onClick={() => setCurrentPage(prev => Math.min(response.pagination.totalPages, prev + 1))}
                 disabled={currentPage === response.pagination.totalPages}
               >
-                Sonraki
+                {t('next')}
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>

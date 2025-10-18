@@ -15,6 +15,7 @@ import vinRoutes from "./routes/vin-routes";
 import blogRoutes from "./routes/blog-routes";
 import raporRoutes from "./routes/rapor-routes";
 import sipayRoutes, { callbackRouter } from "./routes/sipay-routes";
+import ulkelerRoutes from "./routes/ulkeler-routes";
 import { getLocations, createIl, createIlce, deleteIl, deleteIlce } from "./services/location-service";
 import cors from "cors";
 import express from 'express';
@@ -51,6 +52,7 @@ export function registerRoutes(app: Express): Server {
   router.use("/vinreader", vinRoutes);
   router.use("/raporlar", raporRoutes);
   router.use("/sipay", sipayRoutes);
+  router.use("/ulkeler", ulkelerRoutes);
 
   router.use("/blogs", blogRoutes);  // Burada blogRoutes'u ekliyoruz
 

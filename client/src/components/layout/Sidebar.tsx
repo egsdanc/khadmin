@@ -12,83 +12,89 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function Sidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
+
+  console.log('🔧 Sidebar rendered with language:', language);
+  console.log('🔧 Sidebar t function:', t);
 
   const isAdmin = user?.role === "Admin" || user?.role === "Super Admin";
   const isBayi = user?.role === "Bayi";
 
   const menuItems = [
     {
-      title: "Panel",
+      title: t('dashboard'),
       href: "/panel",
       icon: LayoutDashboard,
       show: true,
     },
     {
-      title: "Firmalar",
+      title: t('companies'),
       href: "/firmalar",
       icon: Building2,
       show: isAdmin,
     },
     {
-      title: "Bayiler",
+      title: t('dealers'),
       href: "/bayiler",
       icon: Store,
       show: isAdmin,
     },
     {
-      title: "Panel Kullanıcıları",
+      title: t('panel-users'),
       href: "/panel-users",
       icon: Users,
       show: isAdmin,
     },
     {
-      title: "Program Kullanıcıları",
+      title: t('program-users'),
       href: "/kullanicilar",
       icon: UserSquare2,
       show: isAdmin,
     },
     {
-      title: "VIN Reader",
+      title: t('vin-hacker'),
       href: "/vinreader",
       icon: UserSquare2,
       show: true,
     },
     {
-      title: "Kilometre",
+      title: t('kilometre-hacker'),
       href: "/kilometre",
       icon: UserSquare2,
       show: true,
     },
     {
-      title: "Bakiye Yönetimi",
+      title: t('balance-management'),
       href: "/bakiye",
       icon: Wallet,
       show: true,
     },
     {
-      title: "Komisyon Yönetimi",
+      title: t('commission-management'),
       href: "/komisyon",
       icon: FileBarChart,
       show: true,
     },
     {
-      title: "Raporlar",
+      title: t('reports'),
       href: "/raporlar",
       icon: FileBarChart,
       show: isAdmin,
     },
     {
-      title: "Roller",
+      title: t('roles'),
       href: "/roller",
       icon: UserCog,
       show: isAdmin,
     },
     {
-      title: "Ayarlar",
+      title: t('settings'),
       href: "/ayarlar",
       icon: Settings,
       show: isAdmin,
@@ -124,6 +130,12 @@ export function Sidebar() {
             );
           })}
       </nav>
+      
+      {/* Dil Seçici */}
+      <div className="p-4 border-t bg-blue-50 border-blue-200">
+        <div className="text-xs text-blue-600 font-medium mb-2">Dil Seçimi</div>
+        <LanguageSelector />
+      </div>
     </aside>
   );
 }

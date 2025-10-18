@@ -76,6 +76,7 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
         b.il,
         b.ilce,
         b.bayi_oran,
+        b.bakiye,
         b.vergi_dairesi,
         b.vergi_no,
         COALESCE(f.name, 'Firma Bulunamadı') as firma_name,

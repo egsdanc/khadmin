@@ -99,6 +99,36 @@ const SipayBakiyeEkrani = () => {
     enabled: !!paymentData?.bayi_id,
   });
 
+  // Kullanıcının firma bilgilerini getirmek için query
+  const { data: firmaData, isLoading: firmaLoading } = useQuery({
+    queryKey: ['/api/companies', user?.firma_id],
+    queryFn: async () => {
+      if (!user?.firma_id) return null;
+
+      const response = await fetch(`/api/companies/${user.firma_id}`);
+      if (!response.ok) {
+        throw new Error('Firma bilgisi alınamadı');
+      }
+      return response.json();
+    },
+    enabled: !!user?.firma_id,
+  });
+
+  // Kullanıcının bayi bilgilerini getirmek için query
+  const { data: userBayiData, isLoading: userBayiLoading } = useQuery({
+    queryKey: ['/api/bayiler', user?.bayi_id],
+    queryFn: async () => {
+      if (!user?.bayi_id) return null;
+
+      const response = await fetch(`/api/bayiler/${user.bayi_id}`);
+      if (!response.ok) {
+        throw new Error('Bayi bilgisi alınamadı');
+      }
+      return response.json();
+    },
+    enabled: !!user?.bayi_id,
+  });
+
   // Sayfa yüklendiğinde sessionStorage'dan veri al
   useEffect(() => {
     console.log("🔄 SipayBakiyeEkrani sayfası yükleniyor...");
@@ -106,13 +136,6 @@ const SipayBakiyeEkrani = () => {
     // Giriş yapmış kullanıcı bilgilerini konsola yazdır
     console.log("👤 Giriş yapmış kullanıcı bilgileri:", {
       user: user,
-      userId: user?.id,
-      userName: user?.ad,
-      userSurname: user?.soyad,
-      userEmail: user?.email,
-      userRole: user?.rol,
-      userBayiId: user?.bayi_id,
-      userFirmaId: user?.firma_id
     });
 
     try {
@@ -164,6 +187,41 @@ const SipayBakiyeEkrani = () => {
       setLocation('/bakiye');
     }
   }, [setLocation, toast]);
+
+  // Firma ve bayi bilgilerini console'a yazdır
+  useEffect(() => {
+    console.log("🏢 Kullanıcının firma bilgileri:")
+    if (firmaData) {
+      console.log("🏢 Kullanıcının firma bilgileri:", {
+        firmaData: firmaData,
+      });
+    }
+  }, [firmaData, user?.firma_id]);
+
+  useEffect(() => {
+    if (userBayiData) {
+      console.log("🏪 Kullanıcının bayi bilgileri:", {
+        userBayiData: userBayiData,
+      });
+    }
+  }, [userBayiData, user?.bayi_id]);
+
+  // Auto-fill form data when user and bayi data are available
+  useEffect(() => {
+    if (user && userBayiData) {
+      setFormData(prev => ({
+        ...prev,
+        ad: user.name || "",
+        soyad: user.lastname || "",
+        email: user.email || "",
+        adres: `${userBayiData?.data?.il || ""} ${userBayiData?.data?.ilce || ""}`.trim(),
+        ilce: userBayiData?.data?.il || "",
+        sehir: userBayiData?.data?.ilce || "",
+        telefon: user.telefon || userBayiData?.data?.telefon || "",
+        posta_kodu: userBayiData?.data?.posta_kodu || "",
+      }));
+    }
+  }, [user, userBayiData]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -262,7 +320,8 @@ const SipayBakiyeEkrani = () => {
   };
 
   const validateForm = () => {
-    if (!formData.ad || !formData.soyad || !formData.telefon || !formData.email || !formData.adres || !formData.sehir) {
+    // Since form data is auto-filled, we just need to check if the data is available
+    if (!formData.ad || !formData.soyad || !formData.email) {
       return false;
     }
 
@@ -419,7 +478,7 @@ const SipayBakiyeEkrani = () => {
       toast({
         variant: "destructive",
         title: "Hata",
-        description: "Lütfen tüm zorunlu müşteri bilgilerini doldurun ve geçerli bir e-posta adresi girin.",
+        description: "Müşteri bilgileri yüklenemedi. Lütfen sayfayı yenileyin.",
       });
       return;
     }
@@ -530,132 +589,6 @@ const SipayBakiyeEkrani = () => {
                   </div>
                 </div>
 
-                {/* Müşteri Bilgileri */}
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Müşteri Bilgileri</h3>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="ad">Ad <span className="text-red-500">*</span></Label>
-                        <Input
-                          id="ad"
-                          name="ad"
-                          placeholder="Adınız"
-                          value={formData.ad}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="soyad">Soyad <span className="text-red-500">*</span></Label>
-                        <Input
-                          id="soyad"
-                          name="soyad"
-                          placeholder="Soyadınız"
-                          value={formData.soyad}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="telefon">Telefon <span className="text-red-500">*</span></Label>
-                      <Input
-                        id="telefon"
-                        name="telefon"
-                        type="tel"
-                        placeholder="Telefon Numaranız"
-                        value={formData.telefon}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="email">E-posta <span className="text-red-500">*</span></Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="mail@mail.com"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="adres">Adres <span className="text-red-500">*</span></Label>
-                      <Input
-                        id="adres"
-                        name="adres"
-                        placeholder="Adres Girin"
-                        value={formData.adres}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="ilce">İlçe</Label>
-                        <Input
-                          id="ilce"
-                          name="ilce"
-                          placeholder="İlçe Girin"
-                          value={formData.ilce}
-                          onChange={handleChange}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="sehir">Şehir <span className="text-red-500">*</span></Label>
-                        <Input
-                          id="sehir"
-                          name="sehir"
-                          placeholder="Şehir Girin"
-                          value={formData.sehir}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="posta_kodu">Posta Kodu</Label>
-                        <Input
-                          id="posta_kodu"
-                          name="posta_kodu"
-                          placeholder="Posta Kodu"
-                          value={formData.posta_kodu}
-                          onChange={handleChange}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="ulke">Ülke</Label>
-                      <select
-                        id="ulke"
-                        name="ulke"
-                        value={formData.ulke}
-                        onChange={handleChange}
-                        className="w-full border rounded-md p-3 outline-none focus:border-blue-500"
-                      >
-                        <option value="Türkiye">Türkiye</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="not_satici">Not</Label>
-                      <Input
-                        id="not_satici"
-                        name="not_satici"
-                        placeholder="Not Girin"
-                        value={formData.not_satici}
-                        onChange={handleChange}
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -814,7 +747,8 @@ const SipayBakiyeEkrani = () => {
                           <span>Hesaplanıyor...</span>
                         </div>
                       ) : (
-                        `${formData.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`
+                        formData?.amount > 0 ? `${formData?.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL` 
+                        : `${paymentData?.amount?.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`
                       )}
                     </span>
                   </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Table,
   TableBody,
@@ -47,6 +48,7 @@ interface Bayi {
 }
 
 export default function KomisyonYonetimi() {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [selectedFirma, setSelectedFirma] = useState<number | null>(null);
@@ -141,13 +143,13 @@ export default function KomisyonYonetimi() {
       setPage(1);
       await refetch();
       toast({
-        description: "Filtreleme başarılı",
+        description: t('filtering-successful'),
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Hata",
-        description: "Filtreleme sırasında bir hata oluştu",
+        title: t('error'),
+        description: t('error-during-filtering'),
       });
     }
   };
@@ -158,8 +160,8 @@ export default function KomisyonYonetimi() {
 
   return (
     <div className="container mx-auto py-4 px-2 sm:px-4 md:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold tracking-tight">Komisyon Yönetimi</h1>
-      <p className="text-muted-foreground">Komisyon Yönetimini görüntüle, düzenle ve yönet</p>
+      <h1 className="text-3xl font-bold tracking-tight">{t('commission-management')}</h1>
+      <p className="text-muted-foreground">{t('view-edit-and-manage-commission-management')}</p>
       <Card className="mt-8">
         <CardContent className="pt-6">
           <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 mb-8">
@@ -169,10 +171,10 @@ export default function KomisyonYonetimi() {
                 onValueChange={handleFirmaChange}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Firma Seçin" />
+                  <SelectValue placeholder={t('select-company')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tümü</SelectItem>
+                  <SelectItem value="all">{t('all')}</SelectItem>
                   {firmalar.map((firma) => (
                     <SelectItem key={firma.id} value={firma.id.toString()}>
                       {firma.name}
@@ -187,10 +189,10 @@ export default function KomisyonYonetimi() {
                 disabled={!filteredBayiler?.length || bayilerLoading}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Bayi Seçin" />
+                  <SelectValue placeholder={t('select-dealer')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tümü</SelectItem>
+                  <SelectItem value="all">{t('all')}</SelectItem>
                   {filteredBayiler.map((bayi) => (
                     <SelectItem key={bayi.id} value={bayi.id.toString()}>
                       {bayi.ad}
@@ -210,7 +212,7 @@ export default function KomisyonYonetimi() {
                 disabled={isLoading || bayilerLoading}
                 className="w-full"
               >
-                {isLoading || bayilerLoading ? "Yükleniyor..." : "Filtrele"}
+                {isLoading || bayilerLoading ? t('loading') : t('filter')}
               </Button>
             </div>
           </div>
@@ -220,16 +222,16 @@ export default function KomisyonYonetimi() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">No</TableHead>
-                    <TableHead className="whitespace-nowrap">Firma</TableHead>
-                    <TableHead className="whitespace-nowrap">Bayi</TableHead>
-                    <TableHead className="hidden md:table-cell whitespace-nowrap">Test ID</TableHead>
-                    <TableHead className="hidden md:table-cell whitespace-nowrap">Bayi Oranı (%)</TableHead>
-                    <TableHead className="hidden md:table-cell whitespace-nowrap">Ücret</TableHead>
-                    <TableHead className="hidden md:table-cell whitespace-nowrap">Test Komisyon Tutarı</TableHead>
-                    <TableHead className="whitespace-nowrap">Komisyon Tutarı</TableHead>
-                    <TableHead className="whitespace-nowrap">Bakiye</TableHead>
-                    <TableHead className="hidden md:table-cell whitespace-nowrap">Tarih</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('no')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('company')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('dealer')}</TableHead>
+                    <TableHead className="hidden md:table-cell whitespace-nowrap">{t('test-id')}</TableHead>
+                    <TableHead className="hidden md:table-cell whitespace-nowrap">{t('dealer-rate-percentage')}</TableHead>
+                    <TableHead className="hidden md:table-cell whitespace-nowrap">{t('fee')}</TableHead>
+                    <TableHead className="hidden md:table-cell whitespace-nowrap">{t('test-commission-amount')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('commission-amount')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('balance')}</TableHead>
+                    <TableHead className="hidden md:table-cell whitespace-nowrap">{t('date')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -288,7 +290,7 @@ export default function KomisyonYonetimi() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={10} className="text-center py-4">
-                        Kayıt bulunamadı
+                        {t('no-records-found')}
                       </TableCell>
                     </TableRow>
                   )}
@@ -305,7 +307,7 @@ export default function KomisyonYonetimi() {
               disabled={page === 1 || isLoading || bayilerLoading}
               className="min-w-[80px]"
             >
-              Önceki
+              {t('previous')}
             </Button>
             <Button
               variant="outline"
@@ -314,7 +316,7 @@ export default function KomisyonYonetimi() {
               disabled={page === data?.totalPages || isLoading || bayilerLoading}
               className="min-w-[80px]"
             >
-              Sonraki
+              {t('next')}
             </Button>
           </div>
         </CardContent>

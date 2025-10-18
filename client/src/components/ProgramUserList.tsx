@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ProgramUserEditDialog } from "./ProgramUserEditDialog";
 import { TablePagination } from "./TablePagination";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ProgramUser {
   id: number;
@@ -46,6 +47,7 @@ interface ApiResponse {
 }
 
 export function ProgramUserList() {
+  const { t } = useLanguage();
   const [selectedUser, setSelectedUser] = useState<ProgramUser | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
@@ -111,14 +113,23 @@ export function ProgramUserList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/kullanicilar"] });
       toast({
-        title: "Başarılı",
-        description: "Program kullanıcısı başarıyla silindi",
+        title: t('success'),
+        description: t('program-user-deleted-successfully'),
       });
     },
     onError: (error) => {
+      let errorMessage = t('error-deleting-program-user');
+      
+      // Check if it's a foreign key constraint error
+      if (error instanceof Error && error.message.includes('foreign key constraint')) {
+        errorMessage = t('cannot-delete-user-with-tests');
+      } else if (error instanceof Error && error.message.includes('VIN testleri')) {
+        errorMessage = t('cannot-delete-user-with-tests');
+      }
+      
       toast({
-        title: "Hata",
-        description: `Program kullanıcısı silinirken bir hata oluştu: ${error}`,
+        title: t('error'),
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -146,7 +157,7 @@ export function ProgramUserList() {
       <div className="flex flex-col gap-2 sm:gap-3 p-2 sm:p-0">
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
-            placeholder="İsim veya MAC adresi ile ara..."
+            placeholder={t('search-by-name-or-mac')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="flex-1 min-w-0"
@@ -157,7 +168,7 @@ export function ProgramUserList() {
             className="w-full sm:w-auto whitespace-nowrap"
           >
             <Search className="h-4 w-4 mr-2" />
-            <span>Ara</span>
+            <span>{t('search')}</span>
           </Button>
         </div>
 
@@ -171,10 +182,10 @@ export function ProgramUserList() {
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Firma Seç" />
+              <SelectValue placeholder={t('select-company')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tüm Firmalar</SelectItem>
+              <SelectItem value="all">{t('all-companies')}</SelectItem>
               {companiesResponse?.data?.map((company) => (
                 <SelectItem key={company.id} value={company.id.toString()}>
                   {company.name}
@@ -192,10 +203,10 @@ export function ProgramUserList() {
             disabled={!selectedFirma || selectedFirma === "all"}
           >
             <SelectTrigger>
-              <SelectValue placeholder={selectedFirma === "all" ? "Önce firma seçin" : "Bayi Seç"} />
+              <SelectValue placeholder={selectedFirma === "all" ? t('select-company-first') : t('select-dealer')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tüm Bayiler</SelectItem>
+              <SelectItem value="all">{t('all-dealers')}</SelectItem>
               {branchesResponse?.data
                 ?.filter(branch => !selectedFirma || selectedFirma === "all" || branch.firma === parseInt(selectedFirma))
                 .map((branch) => (
@@ -214,7 +225,7 @@ export function ProgramUserList() {
             className="w-full sm:w-auto whitespace-nowrap"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Program Kullanıcı Ekle
+            {t('add-program-user')}
           </Button>
         </div>
 
@@ -227,12 +238,12 @@ export function ProgramUserList() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[35px] px-1 py-2 text-center">#</TableHead>
-                <TableHead className="px-1 py-2">Ad</TableHead>
-                <TableHead className="hidden sm:table-cell">MAC Adresi</TableHead>
-                <TableHead className="hidden sm:table-cell">Firma</TableHead>
-                <TableHead className="hidden sm:table-cell">Bayi</TableHead>
-                <TableHead className="hidden sm:table-cell">İlk Giriş</TableHead>
-                <TableHead className="w-[60px] px-1 py-2 text-right">İşlem</TableHead>
+                <TableHead className="px-1 py-2">{t('name')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('mac-address')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('company')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('dealer')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('first-login')}</TableHead>
+                <TableHead className="w-[60px] px-1 py-2 text-right">{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -315,8 +326,8 @@ export function ProgramUserList() {
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center">
                     {searchTerm || selectedFirma !== "all" || selectedBayi !== "all"
-                      ? "Arama kriterlerine uygun program kullanıcısı bulunamadı."
-                      : "Program kullanıcısı bulunamadı."}
+                      ? t('no-program-users-found-matching-criteria')
+                      : t('no-program-users-found')}
                   </TableCell>
                 </TableRow>
               )}

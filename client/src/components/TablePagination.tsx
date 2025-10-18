@@ -1,5 +1,6 @@
 import { Button } from "./ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface TablePaginationProps {
   currentPage: number;
@@ -16,13 +17,15 @@ export function TablePagination({
   totalItems,
   itemsPerPage
 }: TablePaginationProps) {
+  const { t } = useLanguage();
+  
   if (totalPages <= 1) return null;
 
   return (
     <div className="flex items-center justify-between px-4 py-4 border-t">
       <div className="flex items-center gap-4">
         <div className="text-sm text-muted-foreground">
-          Toplam {totalItems} kayıt ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} arası)
+          {t('total')} {totalItems} {t('records')} ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} {t('range')})
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -33,7 +36,7 @@ export function TablePagination({
           disabled={currentPage === 1}
         >
           <ChevronLeft className="h-4 w-4 mr-1" />
-          Önceki
+          {t('previous')}
         </Button>
         <div className="flex items-center gap-1">
           {(() => {
@@ -89,7 +92,7 @@ export function TablePagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
         >
-          Sonraki
+          {t('next')}
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>

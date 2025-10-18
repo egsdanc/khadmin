@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // jsPDF için AutoTable tipini genişlet
 declare module 'jspdf' {
@@ -43,6 +44,7 @@ interface KomisyonOzet {
 }
 
 export default function RaporlarPage() {
+  const { t } = useLanguage();
   const [selectedFirma, setSelectedFirma] = useState<string>("all");
   const [selectedBayi, setSelectedBayi] = useState<string>("all");
   const [selectedAy, setSelectedAy] = useState<string>(new Date().getMonth() + 1 + "");
@@ -67,7 +69,7 @@ export default function RaporlarPage() {
 
       const response = await fetch(`/api/bayiler?${params}`);
       if (!response.ok) {
-        throw new Error("Bayi listesi alınamadı");
+        throw new Error(t('error-fetching-dealers'));
       }
       return response.json();
     },
@@ -102,7 +104,7 @@ export default function RaporlarPage() {
    console.log("vcdddsds,",params)
       const response = await fetch(`/api/raporlar/komisyon-ozet?${params}`);
       if (!response.ok) {
-        throw new Error("Komisyon verileri alınamadı");
+        throw new Error(t('error-fetching-commission-data'));
       }
       return response.json();
     }
@@ -118,18 +120,18 @@ export default function RaporlarPage() {
   }, [bayiResponse?.data, selectedFirma]);
 
   const aylar = [
-    { value: "1", label: "Ocak" },
-    { value: "2", label: "Şubat" },
-    { value: "3", label: "Mart" },
-    { value: "4", label: "Nisan" },
-    { value: "5", label: "Mayıs" },
-    { value: "6", label: "Haziran" },
-    { value: "7", label: "Temmuz" },
-    { value: "8", label: "Ağustos" },
-    { value: "9", label: "Eylül" },
-    { value: "10", label: "Ekim" },
-    { value: "11", label: "Kasım" },
-    { value: "12", label: "Aralık" }
+    { value: "1", label: t('january') },
+    { value: "2", label: t('february') },
+    { value: "3", label: t('march') },
+    { value: "4", label: t('april') },
+    { value: "5", label: t('may') },
+    { value: "6", label: t('june') },
+    { value: "7", label: t('july') },
+    { value: "8", label: t('august') },
+    { value: "9", label: t('september') },
+    { value: "10", label: t('october') },
+    { value: "11", label: t('november') },
+    { value: "12", label: t('december') }
   ];
 
   const yillar = Array.from(
@@ -187,17 +189,17 @@ export default function RaporlarPage() {
     });
 
     doc.setFontSize(16);
-    doc.text("Komisyon Raporu", 40, 40);
+    doc.text(t('commission-report-pdf'), 40, 40);
 
     doc.setFontSize(10);
     const selectedAyName = aylar.find(ay => ay.value === selectedAy)?.label || "";
-    doc.text(`Donem: ${replaceTurkishChars(selectedAyName)} ${selectedYil}`, 40, 60);
+    doc.text(`${t('period')}: ${replaceTurkishChars(selectedAyName)} ${selectedYil}`, 40, 60);
 
     const tableData = komisyonlar.map((komisyon, index) => [
       (index + 1).toString(),
       replaceTurkishChars(komisyon.firma_adi || "-"),
       replaceTurkishChars(komisyon.bayi_adi),
-      komisyon.bayi_aktif ? "Aktif" : "Pasif",
+      komisyon.bayi_aktif ? t('active') : t('inactive'),
       formatMoneyForPDF(komisyon.toplam_ucret),
       formatMoneyForPDF(komisyon.toplam_komisyon),
       formatMoneyForPDF(komisyon.guncel_bakiye),
@@ -206,7 +208,7 @@ export default function RaporlarPage() {
     if (totals) {
       tableData.push([
         "",
-        "TOPLAM",
+        t('total').toUpperCase(),
         "",
         "",
         formatMoneyForPDF(totals.toplam_ucret),
@@ -216,7 +218,7 @@ export default function RaporlarPage() {
     }
 
     const headers = [
-      ["No", "Firma", "Bayi", "Durum", "Toplam Ucret", "Toplam Komisyon", "Guncel Bakiye"]
+      [t('number'), t('company'), t('dealer'), t('status'), t('total-fee-pdf'), t('total-commission-pdf'), t('current-balance-pdf')]
     ];
 
     autoTable(doc, {
@@ -253,7 +255,7 @@ export default function RaporlarPage() {
       didDrawPage: (data) => {
         doc.setFontSize(8);
         doc.text(
-          `Sayfa ${doc.getNumberOfPages()}`,
+          `${t('page')} ${doc.getNumberOfPages()}`,
           doc.internal.pageSize.width - 40,
           doc.internal.pageSize.height - 30
         );
@@ -266,20 +268,20 @@ export default function RaporlarPage() {
   return (
     <div className="space-y-4 p-2 sm:space-y-6 sm:p-6">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Raporlar</h1>
-        <p className="text-muted-foreground">Aylık Raporlar</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t('reports')}</h1>
+        <p className="text-muted-foreground">{t('monthly-reports')}</p>
       </div>
 
       <Tabs defaultValue="komisyon" className="space-y-4">
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="komisyon" className="flex-1 sm:flex-none">
-            Komisyon Raporu
+            {t('commission-report')}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="komisyon">
           <Card>
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
-              <CardTitle className="text-lg sm:text-xl">Komisyon Raporu</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">{t('commission-report')}</CardTitle>
               <Button
                 variant="outline"
                 size="sm"
@@ -288,17 +290,17 @@ export default function RaporlarPage() {
                 disabled={isLoading || komisyonlar.length === 0}
               >
                 <FileDown className="mr-2 h-4 w-4" />
-                PDF'e Aktar
+                {t('export-to-pdf')}
               </Button>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-6">
                 <Select value={selectedFirma} onValueChange={handleFirmaChange}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Firma Seçin" />
+                    <SelectValue placeholder={t('select-company')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tüm Firmalar</SelectItem>
+                    <SelectItem value="all">{t('all-companies')}</SelectItem>
                     {firmalar.map((firma) => (
                       <SelectItem key={firma.id} value={firma.id.toString()}>
                         {firma.name}
@@ -313,10 +315,10 @@ export default function RaporlarPage() {
                   disabled={selectedFirma === "all"}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Bayi Seçin" />
+                    <SelectValue placeholder={t('select-dealer')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tüm Bayiler</SelectItem>
+                    <SelectItem value="all">{t('all-dealers')}</SelectItem>
                     {filteredBayiler.map((bayi) => (
                       <SelectItem key={bayi.id} value={bayi.id.toString()}>
                         {bayi.ad}
@@ -327,7 +329,7 @@ export default function RaporlarPage() {
 
                 <Select value={selectedAy} onValueChange={handleAyChange}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Ay Seçin" />
+                    <SelectValue placeholder={t('select-month')} />
                   </SelectTrigger>
                   <SelectContent>
                     {aylar.map((ay) => (
@@ -340,7 +342,7 @@ export default function RaporlarPage() {
 
                 <Select value={selectedYil} onValueChange={handleYilChange}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Yıl Seçin" />
+                    <SelectValue placeholder={t('select-year')} />
                   </SelectTrigger>
                   <SelectContent>
                     {yillar.map((yil) => (
@@ -358,20 +360,20 @@ export default function RaporlarPage() {
                 </div>
               ) : komisyonlar.length === 0 ? (
                 <div className="text-muted-foreground text-center py-4">
-                  Henüz komisyon kaydı bulunmuyor
+                  {t('no-commission-records')}
                 </div>
               ) : (
                 <div className="rounded-md border w-full max-w-full">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="hidden sm:table-cell w-[50px] whitespace-nowrap">No</TableHead>
-                        <TableHead className="hidden sm:table-cell whitespace-nowrap">Firma</TableHead>
-                        <TableHead className="w-[40%] whitespace-nowrap text-sm">Bayi</TableHead>
-                        <TableHead className="hidden sm:table-cell whitespace-nowrap">Durum</TableHead>
-                        <TableHead className="hidden sm:table-cell text-right whitespace-nowrap">Toplam Ücret</TableHead>
-                        <TableHead className="w-[30%] text-right whitespace-nowrap text-sm">Komisyon</TableHead>
-                        <TableHead className="w-[30%] text-right whitespace-nowrap text-sm">Bakiye</TableHead>
+                        <TableHead className="hidden sm:table-cell w-[50px] whitespace-nowrap">{t('number')}</TableHead>
+                        <TableHead className="hidden sm:table-cell whitespace-nowrap">{t('company')}</TableHead>
+                        <TableHead className="w-[40%] whitespace-nowrap text-sm">{t('dealer')}</TableHead>
+                        <TableHead className="hidden sm:table-cell whitespace-nowrap">{t('status')}</TableHead>
+                        <TableHead className="hidden sm:table-cell text-right whitespace-nowrap">{t('total-fee')}</TableHead>
+                        <TableHead className="w-[30%] text-right whitespace-nowrap text-sm">{t('commission')}</TableHead>
+                        <TableHead className="w-[30%] text-right whitespace-nowrap text-sm">{t('balance')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody className="text-sm">
@@ -389,7 +391,7 @@ export default function RaporlarPage() {
                                   : "bg-red-100 text-red-800"
                               )}
                             >
-                              {komisyon.bayi_aktif ? "Aktif" : "Pasif"}
+                              {komisyon.bayi_aktif ? t('active') : t('inactive')}
                             </span>
                           </TableCell>
                           <TableCell className="hidden sm:table-cell text-right whitespace-nowrap">
@@ -408,10 +410,10 @@ export default function RaporlarPage() {
                       <TableFooter>
                         <TableRow className="text-sm">
                           <TableCell colSpan={4} className="hidden sm:table-cell text-right font-medium whitespace-nowrap">
-                            Toplam
+                            {t('total')}
                           </TableCell>
                           <TableCell colSpan={1} className="sm:hidden text-right font-medium whitespace-nowrap p-2">
-                            Toplam
+                            {t('total')}
                           </TableCell>
                           <TableCell className="hidden sm:table-cell text-right whitespace-nowrap font-medium">
                             {formatCurrency(totals.toplam_ucret)}

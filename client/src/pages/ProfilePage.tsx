@@ -11,8 +11,11 @@ import {
 } from "@/components/ui/breadcrumb";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 export default function ProfilePage() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [firmaName, setFirmaName] = useState<string | null>(null);
   const [bayiName, setBayiName] = useState<string | null>(null);
@@ -71,83 +74,101 @@ export default function ProfilePage() {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/">Ana Sayfa</BreadcrumbLink>
+            <BreadcrumbLink href="/">{t('home')}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Profil</BreadcrumbPage>
+            <BreadcrumbPage>{t('profile')}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Profil</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('profile')}</h1>
         <p className="text-sm md:text-base text-muted-foreground">
-          Profil bilgilerinizi görüntüleyin
+          {t('view-profile-information')}
         </p>
       </div>
 
       <div className="grid gap-6">
         <Card className="w-full max-w-2xl mx-auto">
           <CardHeader className="p-4 md:p-6">
-            <CardTitle className="text-xl md:text-2xl">Profil Bilgileri</CardTitle>
+            <CardTitle className="text-xl md:text-2xl">{t('profile-information')}</CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-6 space-y-4">
             <div className="grid gap-2">
-              <Label className="font-medium">Ad Soyad</Label>
+              <Label className="font-medium">{t('full-name')}</Label>
               <div className="text-sm md:text-base bg-muted/50 p-2 rounded-md">
                 {user?.name || '-'}
               </div>
             </div>
             <div className="grid gap-2">
-              <Label className="font-medium">E-posta</Label>
+              <Label className="font-medium">{t('email')}</Label>
               <div className="text-sm md:text-base bg-muted/50 p-2 rounded-md">
                 {user?.email || '-'}
               </div>
             </div>
             <div className="grid gap-2">
-              <Label className="font-medium">Rol</Label>
+              <Label className="font-medium">{t('role')}</Label>
               <div className="text-sm md:text-base bg-muted/50 p-2 rounded-md">
                 {user?.role || '-'}
               </div>
             </div>
             {user?.firma_id && (
               <div className="grid gap-2">
-                <Label className="font-medium">Firma</Label>
+                <Label className="font-medium">{t('company')}</Label>
                 <div className="text-sm md:text-base bg-muted/50 p-2 rounded-md">
-                  {firmaName || 'Yükleniyor...'}
+                  {firmaName || t('loading')}
                 </div>
               </div>
             )}
             {user?.bayi_id && (
               <div className="grid gap-2">
-                <Label className="font-medium">Bayi</Label>
+                <Label className="font-medium">{t('dealer')}</Label>
                 <div className="text-sm md:text-base bg-muted/50 p-2 rounded-md">
-                  {bayiName || 'Yükleniyor...'}
+                  {bayiName || t('loading')}
                 </div>
               </div>
             )}
             <div className="grid gap-2">
-              <Label className="font-medium">Durum</Label>
+              <Label className="font-medium">{t('status')}</Label>
               <div className="text-sm md:text-base bg-muted/50 p-2 rounded-md">
                 {user?.status || '-'}
               </div>
             </div>
             {user?.bayi_id && (
               <div className="grid gap-2">
-                <Label className="font-medium">Bakiye Bilgileri</Label>
+                <Label className="font-medium">{t('balance-information')}</Label>
                 <div className="space-y-2">
                   <div className="text-sm md:text-base bg-muted/50 p-2 rounded-md">
-                    {user.role === "Bayi" ? "Bayi Bakiyesi" : "Tüm Bayilerin Bakiyesi"}: {balanceData?.data?.formattedTotalBalance || "0,00 ₺"}
+                    {user.role === "Bayi" ? t('dealer-balance') : t('all-dealers-balance')}: {balanceData?.data?.formattedTotalBalance || "0,00 ₺"}
                   </div>
                   {user.role !== "Bayi" && (
                     <div className="text-sm md:text-base bg-muted/50 p-2 rounded-md">
-                      Aktif Bayi Sayısı: {balanceData?.data?.activeCount || 0}
+                      {t('active-dealer-count')}: {balanceData?.data?.activeCount || 0}
                     </div>
                   )}
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Dil Seçici */}
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="text-xl md:text-2xl">{t('language-preference')}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 md:p-6">
+            <div className="grid gap-2">
+              <Label className="font-medium">{t('select-language')}</Label>
+              <div className="flex items-center gap-4">
+                <LanguageSelector />
+                <span className="text-sm text-muted-foreground">
+                  {t('language-change-description')}
+                </span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

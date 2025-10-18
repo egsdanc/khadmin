@@ -21,6 +21,7 @@ import { format } from "date-fns";
 import { tr } from 'date-fns/locale';
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Örnek veriler
 const SAMPLE_DATA = {
@@ -68,6 +69,13 @@ const chartColors = {
 };
 
 const Panel = () => {
+  const { t, language } = useLanguage();
+  
+  // Debug için
+  console.log('🎯 Panel component - Current language:', language);
+  console.log('🎯 Panel component - Dashboard translation:', t('dashboard'));
+  console.log('🎯 Panel component - useLanguage hook result:', { t, language });
+  
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -259,59 +267,59 @@ const Panel = () => {
   // Update stats array with real data
   const allStats = [
     {
-      title: "Toplam Komisyon",
+      title: t('total-commission'),
       value: totalCommissionData?.data?.formattedTotalCommission || "0,00 ₺",
       icon: TrendingUp,
-      description: "Tüm zamanlar",
+      description: t('all-time'),
       color: COLORS.primary
     },
     {
-      title: "Cihaz Satış Toplamı",
+      title: t('device-sales'),
       value: satislarToplam?.data?.formattedTotal || "0,00 ₺",
       icon: DollarSign,
-      description: "Toplam satış tutarı",
+      description: t('total-sales-amount'),
       color: COLORS.secondary
     },
     {
-      title: "Toplam Km Test",
+      title: t('total-km-test'),
       value: totalKilometreTests.toString(),
       icon: Gauge,
-      description: "Tüm zamanlar",
+      description: t('all-time'),
       color: COLORS.success
     },
     {
-      title: "Aktif Bayiler",
+      title: t('active-dealers'),
       value: activeDealersCount.toString(),
       icon: Users,
-      description: "Toplam bayi sayısı",
+      description: t('total-dealer-count'),
       color: COLORS.warning
     },
     {
-      title: "Toplam Bakiye",
+      title: t('total-balance'),
       value: dealersData?.data?.formattedTotalBalance || "0,00 ₺",
       icon: CreditCard,
-      description: user.user.role === "Bayi" ? "Bayi Bakiyesi" :"Tüm bayilerin bakiyesi"  ,
+      description: user.user.role === "Bayi" ? t('dealer-balance') : t('all-dealers-balance'),
       color: COLORS.info
     },
     {
-      title: "Toplam Test Ücreti",
-      value: isLoadingFees ? "Yükleniyor..." : (totalFeesData?.data?.formattedTotalFees || "0,00 ₺"),
+      title: t('total-test-fee'),
+      value: isLoadingFees ? t('loading') : (totalFeesData?.data?.formattedTotalFees || "0,00 ₺"),
       icon: ClipboardCheck,
-      description: "Toplam test geliri",
+      description: t('total-test-revenue'),
       color: COLORS.purple
     },
     {
-      title: "Aktif Firmalar",
+      title: t('active-companies'),
       value: activeCompaniesCount.toString(),
       icon: Building2,
-      description: "Toplam firma sayısı",
+      description: t('total-company-count'),
       color: COLORS.orange
     },
     {
-      title: "Toplam VIN Test",
+      title: t('total-vin-test'),
       value: totalVinTests.toString(),
       icon: Car,
-      description: "VIN test sayısı",
+      description: t('vin-test-count'),
       color: COLORS.teal
     }
   ];
@@ -319,7 +327,7 @@ const Panel = () => {
   console.log( "ufffuu",user.user.role)
   const stats = allStats.filter(stat => {
     if (
-      ["Cihaz Satış Toplamı", "Aktif Bayiler", "Aktif Firmalar", "Toplam Test Ücreti"].includes(stat.title) &&
+      [t('device-sales'), "Aktif Bayiler", "Aktif Firmalar", "Toplam Test Ücreti"].includes(stat.title) &&
       !["Admin", "Super Admin"].includes(user.user.role)
     ) {
       return false; // Eğer rol uygun değilse, bu elemanı filtrele
@@ -338,10 +346,10 @@ const Panel = () => {
         {/* Header */}
         <motion.div variants={item} className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-            Panel
+            {t('dashboard')}
           </h1>
           <p className="text-gray-500 text-lg">
-            Sistem yönetimi ve istatistikleri burada görüntüleyebilirsiniz.
+            {t('dashboard-description')}
           </p>
         </motion.div>
 
@@ -371,7 +379,7 @@ const Panel = () => {
           <motion.div variants={item} className="lg:col-span-6">
             <Card className="bg-white border-gray-100">
               <CardHeader className="pb-4">
-                <CardTitle className="text-base font-medium text-gray-700">Komisyon Gelişimi</CardTitle>
+                <CardTitle className="text-base font-medium text-gray-700">{t('commission-development')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px] w-full">
@@ -395,13 +403,13 @@ const Panel = () => {
                           borderRadius: '8px',
                           boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                         }}
-                        formatter={(value: number) => [`${value.toLocaleString('tr-TR')} ₺`, 'Komisyon']}
+                        formatter={(value: number) => [`${value.toLocaleString('tr-TR')} ₺`, t('commission')]}
                       />
                       <Legend />
                       <Line
                         type="monotone"
                         dataKey="komisyon"
-                        name="Komisyon (₺)"
+                        name={`${t('commission')} (₺)`}
                         stroke={COLORS.primary}
                         strokeWidth={2}
                         dot={{ stroke: COLORS.primary, strokeWidth: 2 }}
@@ -418,7 +426,7 @@ const Panel = () => {
           <motion.div variants={item} className="lg:col-span-6">
             <Card className="bg-white border-gray-100">
               <CardHeader className="pb-4">
-                <CardTitle className="text-base font-medium text-gray-700">Firma Bayi Dağılımı</CardTitle>
+                <CardTitle className="text-base font-medium text-gray-700">{t('company-dealer-distribution')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px] w-full flex flex-col items-center justify-center">
@@ -472,7 +480,7 @@ const Panel = () => {
 
           <Card className="bg-white border-gray-100">
             <CardHeader className="pb-4">
-              <CardTitle className="text-base font-medium text-gray-700">En Yüksek Bakiyeli Bayiler</CardTitle>
+              <CardTitle className="text-base font-medium text-gray-700">{t('highest-balance-dealers')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[300px] w-full">
