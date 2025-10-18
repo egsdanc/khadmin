@@ -68,6 +68,7 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
         b.id, 
         b.ad, 
         b.firma,
+        b.firma as firma_id,
         b.aktif,
         b.email,
         b.telefon,
@@ -77,7 +78,8 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
         b.bayi_oran,
         b.vergi_dairesi,
         b.vergi_no,
-        COALESCE(f.name, 'Firma Bulunamadı') as firma_name
+        COALESCE(f.name, 'Firma Bulunamadı') as firma_name,
+        f.firma_unvan
       FROM bayiler b
       LEFT JOIN firmalar f ON b.firma = f.id
       WHERE 1=1

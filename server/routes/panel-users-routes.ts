@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { db } from "../services/database-service";
+import { requireAuth } from "../auth";
 
 const router = Router();
 
 // Panel kullanıcılarını listele
-router.get("/", async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   let connection;
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -14,16 +15,33 @@ router.get("/", async (req, res) => {
     const status = req.query.status as string;
     const offset = (page - 1) * limit;
 
+    // Get current user info
+    const currentUser = req.user;
+    if (!currentUser) {
+      return res.status(401).json({
+        success: false,
+        message: "Kullanıcı bilgisi alınamadı"
+      });
+    }
+
     connection = await db.getConnection();
 
     // Build WHERE clause based on filters
     let whereConditions = ['p.deleted_at IS NULL'];
     const queryParams: any[] = [];
 
+    // Role-based filtering
+    if (currentUser.role === 'Admin') {
+      // Admin users can see Bayi role users and themselves (not other admins or super admins)
+      whereConditions.push('(p.role = ? OR p.id = ?)');
+      queryParams.push('Bayi', currentUser.id);
+    }
+    // Super Admin can see all users (no additional filter)
+
     if (search) {
-      whereConditions.push('(LOWER(p.name) LIKE LOWER(?) OR LOWER(p.email) LIKE LOWER(?))');
+      whereConditions.push('(LOWER(p.name) LIKE LOWER(?) OR LOWER(p.lastname) LIKE LOWER(?) OR LOWER(p.email) LIKE LOWER(?))');
       const searchTerm = `%${search}%`;
-      queryParams.push(searchTerm, searchTerm);
+      queryParams.push(searchTerm, searchTerm, searchTerm);
     }
 
     if (role && role !== 'all') {
@@ -51,6 +69,7 @@ router.get("/", async (req, res) => {
     const [results] = await connection.execute(`
       SELECT 
         p.*,
+        CONCAT(p.name, ' ', COALESCE(p.lastname, '')) as full_name,
         f.name as firma_name,
         f.firma_unvan,
         b.ad as bayi_name
@@ -119,17 +138,24 @@ router.get("/companies", async (req, res) => {
 });
 
 // Yeni panel kullanıcısı ekle
-router.post("/", async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   let connection;
   try {
-    const { name, email, password, firma_id, bayi_id, role, status } = req.body;
+    const { name, lastname, email, password, firma_id, bayi_id, role, status } = req.body;
     console.log("Yeni kullanıcı ekleme isteği:", { ...req.body, password: '***' });
+    console.log("Parsed fields:", { name, lastname, email, firma_id, bayi_id, role, status });
 
     // Zorunlu alan kontrolü
-    if (!name || !email || !password) {
+    if (!name) {
       return res.status(400).json({
         success: false,
-        message: "Ad Soyad, E-posta ve Şifre alanları zorunludur"
+        message: "Ad alanı zorunludur"
+      });
+    }
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "E-posta ve Şifre alanları zorunludur"
       });
     }
 
@@ -150,12 +176,24 @@ router.post("/", async (req, res) => {
     }
 
     // Yeni kullanıcı ekleme
+    console.log("INSERT parametreleri:", [
+      name,
+      lastname && lastname.trim() ? lastname.trim() : null,
+      email,
+      password,
+      firma_id || null,
+      bayi_id || null,
+      role || 'Bayi',
+      status || 'active'
+    ]);
+    
     const [insertResult] = await connection.execute(`
       INSERT INTO panel_users (
-        name, email, password, firma_id, bayi_id, role, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        name, lastname, email, password, firma_id, bayi_id, role, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `, [
       name,
+      lastname && lastname.trim() ? lastname.trim() : null,
       email,
       password,
       firma_id || null,
@@ -174,6 +212,7 @@ router.post("/", async (req, res) => {
     const [newUserResult] = await connection.execute(`
       SELECT 
         p.*,
+        CONCAT(p.name, ' ', COALESCE(p.lastname, '')) as full_name,
         f.name as firma_name,
         f.firma_unvan,
         b.ad as bayi_name
@@ -212,11 +251,11 @@ router.post("/", async (req, res) => {
 });
 
 // Panel kullanıcısı güncelle
-router.put("/:id", async (req, res) => {
+router.put("/:id", requireAuth, async (req, res) => {
   let connection;
   try {
     const id = parseInt(req.params.id);
-    const { name, email, password, firma_id, bayi_id, role, status } = req.body;
+    const { name, lastname, email, password, firma_id, bayi_id, role, status } = req.body;
 
     console.log("Kullanıcı güncelleme isteği:", { id, ...req.body, password: password ? '***' : undefined });
 
@@ -247,9 +286,15 @@ router.put("/:id", async (req, res) => {
     const updateFields = [];
     const updateValues = [];
 
-    if (name) {
+    // Handle name fields
+    if (name !== undefined) {
       updateFields.push('name = ?');
       updateValues.push(name);
+    }
+    
+    if (lastname !== undefined) {
+      updateFields.push('lastname = ?');
+      updateValues.push(lastname && lastname.trim() ? lastname.trim() : null);
     }
     if (email) {
       updateFields.push('email = ?');
@@ -303,6 +348,7 @@ router.put("/:id", async (req, res) => {
     const [updatedUserResult] = await connection.execute(`
       SELECT 
         p.*,
+        CONCAT(p.name, ' ', COALESCE(p.lastname, '')) as full_name,
         f.name as firma_name,
         f.firma_unvan,
         b.ad as bayi_name
@@ -341,7 +387,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // Panel kullanıcısı sil (soft delete)
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireAuth, async (req, res) => {
   let connection;
   try {
     const id = parseInt(req.params.id);

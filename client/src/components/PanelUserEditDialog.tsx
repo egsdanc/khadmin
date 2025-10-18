@@ -36,12 +36,14 @@ interface Dealer {
   firma: number;
   firma_id: number;
   firma_adi: string;
+  firma_name: string;
   firma_unvan: string;
 }
 
 interface User {
   id?: number;
   name: string;
+  lastname?: string;
   email: string;
   password?: string;
   firma_id: number | null;
@@ -53,7 +55,8 @@ interface User {
 }
 
 const formSchema = z.object({
-  name: z.string().min(1, "Ad Soyad zorunludur"),
+  name: z.string().min(1, "Ad zorunludur"),
+  lastname: z.string().optional(),
   email: z.string().email("Geçerli bir e-posta adresi giriniz"),
   password: z.string().optional(),
   firma_id: z.number().nullable(),
@@ -72,6 +75,7 @@ interface Props {
 
 const defaultValues: FormValues = {
   name: "",
+  lastname: "",
   email: "",
   password: "",
   firma_id: null,
@@ -100,17 +104,28 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
 
   // Bayileri getir - firma seçimine bağlı olarak
   const { data: dealersResponse } = useQuery<{ success: boolean; data: Dealer[] }>({
-    queryKey: ['/api/bayiler'],
-    enabled: open,
+    queryKey: ['/api/bayiler', selectedFirmaId],
+    queryFn: async () => {
+      if (!selectedFirmaId) {
+        return { success: true, data: [] };
+      }
+
+      const params = new URLSearchParams({
+        firmaId: selectedFirmaId.toString(),
+        limit: "1000",
+      });
+
+      const response = await fetch(`/api/bayiler?${params}`);
+      if (!response.ok) {
+        throw new Error("Bayi listesi alınamadı");
+      }
+      return response.json();
+    },
+    enabled: open && !!selectedFirmaId,
   });
 
   const companies = companiesResponse?.data || [];
   const dealers = dealersResponse?.data || [];
-
-  // Seçili firmaya ait bayileri filtrele
-  const filteredDealers = dealers.filter(dealer =>
-    dealer.firma === selectedFirmaId || dealer.firma_id === selectedFirmaId
-  );
 
   // Modal kapandığında formu sıfırla
   useEffect(() => {
@@ -121,6 +136,7 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
       // Modal açıldığında ve düzenleme modundaysa kullanıcı verilerini yükle
       form.reset({
         name: user.name || "",
+        lastname: user.lastname || "",
         email: user.email || "",
         password: "",
         firma_id: user.firma_id,
@@ -150,6 +166,8 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
       if (!dataToSend.password) {
         delete dataToSend.password;
       }
+
+      console.log('PanelUserEditDialog - Gönderilen veri:', dataToSend);
 
       const response = await fetch(url, {
         method,
@@ -244,7 +262,18 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
                 <FormItem>
                   <FormLabel>Bayi</FormLabel>
                   <Select
-                    onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                    onValueChange={(value) => {
+                      const selectedBayiId = value ? parseInt(value) : null;
+                      field.onChange(selectedBayiId);
+                      
+                      // Seçilen bayinin firma_id'sini de form'a set et
+                      if (selectedBayiId) {
+                        const selectedDealer = dealers.find(d => d.id === selectedBayiId);
+                        if (selectedDealer && selectedDealer.firma_id) {
+                          form.setValue('firma_id', selectedDealer.firma_id);
+                        }
+                      }
+                    }}
                     value={field.value?.toString()}
                     disabled={!selectedFirmaId}
                   >
@@ -254,7 +283,7 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="max-h-[140px] overflow-y-auto">
-                      {filteredDealers.map((dealer) => (
+                      {dealers.map((dealer) => (
                         <SelectItem key={dealer.id} value={dealer.id.toString()}>
                           {dealer.ad}
                         </SelectItem>
@@ -266,19 +295,35 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ad Soyad</FormLabel>
-                  <FormControl>
-                    <Input {...field} className="h-9" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ad</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="h-9" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="lastname"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Soyad</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="h-9" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

@@ -210,11 +210,12 @@ export function Layout({ children }: LayoutProps) {
           "fixed inset-y-0 left-0 z-40",
           "w-64 bg-white shadow-md",
           "transform transition-transform duration-200 ease-in-out",
+          "flex flex-col",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         {/* Sidebar Header */}
-        <div className="flex h-14 items-center justify-between border-b px-4">
+        <div className="flex h-14 items-center justify-between border-b px-4 flex-shrink-0">
           <span className="text-sm sm:text-lg font-semibold pl-12 sm:pl-0">Kilometre Hacker</span>
           <Button
             variant="ghost"
@@ -251,7 +252,7 @@ export function Layout({ children }: LayoutProps) {
         </nav>
 
         {/* Logout Button */}
-        <div className="border-t p-2">
+        <div className="border-t p-2 flex-shrink-0">
           <Button
             variant="ghost"
             className="w-full justify-start gap-3"

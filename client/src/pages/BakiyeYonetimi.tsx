@@ -300,7 +300,7 @@ const OnlineOdemeSipay = () => {
       }
 
       const params = new URLSearchParams({
-        firma_id: selectedFirma,
+        firmaId: selectedFirma,
         limit: "1000",
       });
 
@@ -627,7 +627,7 @@ const BakiyeYukle = () => {
       }
 
       const params = new URLSearchParams({
-        firma_id: selectedFirma,
+        firmaId: selectedFirma,
         limit: "1000",
       });
 
@@ -916,7 +916,7 @@ const BakiyeYonetimi = () => {
 //       }
 
 //       const params = new URLSearchParams({
-//         firma_id: selectedFirma,
+//         firmaId: selectedFirma,
 //         limit: "1000",
 //       });
 

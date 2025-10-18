@@ -121,6 +121,7 @@ export const users = mysqlTable("kullanicilar", {
 export const panel_users = mysqlTable("panel_users", {
   id: int("id").primaryKey().autoincrement(),
   name: varchar("name", { length: 255 }).notNull(),
+  lastname: varchar("lastname", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
   firma_id: int("firma_id").references(() => companies.id, {

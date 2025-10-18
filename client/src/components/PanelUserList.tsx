@@ -35,6 +35,8 @@ import { useToast } from "@/hooks/use-toast";
 interface PanelUser {
   id: number;
   name: string;
+  lastname?: string;
+  full_name?: string;
   email: string;
   firma_id: number | null;
   firma_name: string | null;
@@ -228,8 +230,8 @@ export default function PanelUserList() {
                       {(currentPage - 1) * itemsPerPage + index + 1}
                     </TableCell>
                     <TableCell className="max-w-[120px] sm:max-w-[200px]">
-                      <div className="truncate" title={user.name}>
-                        {user.name}
+                      <div className="truncate" title={user.full_name || `${user.name} ${user.lastname || ''}`.trim()}>
+                        {user.full_name || `${user.name} ${user.lastname || ''}`.trim()}
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell max-w-[200px]">

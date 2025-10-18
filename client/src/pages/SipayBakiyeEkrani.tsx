@@ -102,6 +102,18 @@ const SipayBakiyeEkrani = () => {
   // Sayfa yüklendiğinde sessionStorage'dan veri al
   useEffect(() => {
     console.log("🔄 SipayBakiyeEkrani sayfası yükleniyor...");
+    
+    // Giriş yapmış kullanıcı bilgilerini konsola yazdır
+    console.log("👤 Giriş yapmış kullanıcı bilgileri:", {
+      user: user,
+      userId: user?.id,
+      userName: user?.ad,
+      userSurname: user?.soyad,
+      userEmail: user?.email,
+      userRole: user?.rol,
+      userBayiId: user?.bayi_id,
+      userFirmaId: user?.firma_id
+    });
 
     try {
       // SessionStorage'dan veriyi al
