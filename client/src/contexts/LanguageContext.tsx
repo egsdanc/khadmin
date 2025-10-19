@@ -1172,7 +1172,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const saveLanguagePreference = async (newLanguage: Language) => {
     try {
       await fetch('/api/panel-users/language', {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ language: newLanguage })
       });

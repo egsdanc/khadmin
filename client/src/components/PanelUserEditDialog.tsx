@@ -244,7 +244,7 @@ export function PanelUserEditDialog({ user, open, onOpenChange }: Props) {
   const updateUserMutation = useMutation({
     mutationFn: async (data: FormValues) => {
       const url = user?.id ? `/api/panel-users/${user.id}` : '/api/panel-users';
-      const method = user?.id ? 'PUT' : 'POST';
+      const method = 'POST';
 
       const dataToSend = { ...data };
       if (!dataToSend.password) {

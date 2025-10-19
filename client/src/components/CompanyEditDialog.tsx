@@ -111,7 +111,7 @@ export function CompanyEditDialog({ company, open, onOpenChange }: CompanyEditDi
       if (!company) return;
 
       const response = await fetch(`/api/companies/${company.id}`, {
-        method: "PUT",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });

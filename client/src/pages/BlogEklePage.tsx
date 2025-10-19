@@ -170,7 +170,7 @@ export default function BlogEklePage() {
         ? `/api/blogs/${editingBlog.id}`
         : '/api/blogs';
 
-      const method = editingBlog ? 'PUT' : 'POST';
+      const method = 'POST';
 
       const response = await fetch(url, {
         method,

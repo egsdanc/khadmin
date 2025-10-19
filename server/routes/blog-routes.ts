@@ -210,7 +210,7 @@ router.get('/', async (req, res) => {
 });
 
 // Blog güncelleme endpoint'i
-router.put('/:id', upload.single('coverImage'), async (req, res) => {
+router.post('/:id', upload.single('coverImage'), async (req, res) => {
   let connection;
   try {
     const { id } = req.params;

@@ -218,7 +218,7 @@ export function ProgramUserEditDialog({ user, open, onOpenChange }: Props) {
       setIsSubmitting(true);
 
       const endpoint = user?.id ? `/api/kullanicilar/${user.id}` : '/api/kullanicilar';
-      const method = user?.id ? 'PUT' : 'POST';
+      const method = 'POST';
 
       // Şifre kontrolü - boşsa veya sadece boşluk karakterlerinden oluşuyorsa body'den çıkar
       const formData = {

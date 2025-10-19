@@ -149,7 +149,7 @@ router.delete('/iller/:ilId/ilceler/:ilceId', async (req, res) => {
 });
 
 // İl güncelle
-router.put('/iller/:ilId', async (req, res) => {
+router.post('/iller/:ilId', async (req, res) => {
   try {
     const { ilId } = req.params;
     const { il } = req.body;
@@ -173,7 +173,7 @@ router.put('/iller/:ilId', async (req, res) => {
 });
 
 // İlçe güncelle
-router.put('/iller/:ilId/ilceler/:ilceId', async (req, res) => {
+router.post('/iller/:ilId/ilceler/:ilceId', async (req, res) => {
   try {
     const { ilceId } = req.params;
     const { ilce } = req.body;

@@ -167,7 +167,7 @@ router.post("/", async (req, res) => {
 });
 
 // Program kullanıcısını güncelle
-router.put("/:id", async (req, res) => {
+router.post("/:id", async (req, res) => {
   let connection;
   try {
     const { id } = req.params;

@@ -357,7 +357,7 @@ export default function CihazSatislari() {
       };
 
       const response = await fetch(`/api/cihaz-satislari/${editingId}`, {
-        method: "PUT",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },

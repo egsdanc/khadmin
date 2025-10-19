@@ -95,7 +95,7 @@ router.post("/", async (req, res) => {
 });
 
 // Rol güncelleme endpoint'i
-router.put("/:id", async (req, res) => {
+router.post("/:id", async (req, res) => {
   let connection;
   try {
     const { id } = req.params;

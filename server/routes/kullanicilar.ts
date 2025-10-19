@@ -92,7 +92,7 @@ router.post('/', async (req, res) => {
 });
 
 // Kullanıcı güncelleme
-router.put('/:id', async (req, res) => {
+router.post('/:id', async (req, res) => {
   const { id } = req.params;
   const { isim, macAdress, firstlogin, bayi_id, firma_id } = req.body;
 
@@ -100,7 +100,9 @@ router.put('/:id', async (req, res) => {
     id,
     body: req.body,
     bayi_id_type: typeof bayi_id,
-    bayi_id_value: bayi_id
+    bayi_id_value: bayi_id,
+    method: req.method,
+    headers: req.headers
   });
 
   let connection = null;

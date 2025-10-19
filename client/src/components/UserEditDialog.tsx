@@ -86,7 +86,7 @@ export function UserEditDialog({ user, open, onOpenChange }: UserEditDialogProps
         }
 
         const endpoint = user?.id ? `/api/kullanicilar/${user.id}` : '/api/kullanicilar';
-        const method = user?.id ? 'PUT' : 'POST';
+        const method = 'POST';
 
         console.log('Sending API request:', {
           endpoint,

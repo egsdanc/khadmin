@@ -261,7 +261,7 @@ router.post("/", requireAuth, async (req, res) => {
 });
 
 // Panel kullanıcısı güncelle
-router.put("/:id", requireAuth, async (req, res) => {
+router.post("/:id", requireAuth, async (req, res) => {
   let connection;
   try {
     const id = parseInt(req.params.id);
@@ -527,7 +527,7 @@ router.get("/check-email", requireAuth, async (req, res) => {
 });
 
 // Dil tercihini güncelle
-router.put("/language", requireAuth, async (req, res) => {
+router.post("/language", requireAuth, async (req, res) => {
   let connection;
   try {
     const { language } = req.body;

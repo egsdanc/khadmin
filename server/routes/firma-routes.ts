@@ -136,8 +136,8 @@ router.post("/", async (req, res) => {
   }
 });
 
-// PUT /api/companies/:id - Firma güncelle
-router.put("/:id", async (req, res) => {
+// POST /api/companies/:id - Firma güncelle
+router.post("/:id", async (req, res) => {
   let connection;
   try {
     const { id } = req.params;

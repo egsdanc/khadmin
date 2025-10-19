@@ -153,7 +153,7 @@ const deleteIlceNew = async (ilId: number, ilceId: number) => {
 
 const updateIl = async (id: number, data: { il: string }) => {
   const response = await fetch(`/api/ulkeler/iller/${id}`, {
-    method: "PUT",
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
@@ -165,7 +165,7 @@ const updateIl = async (id: number, data: { il: string }) => {
 
 const updateIlce = async (ilId: number, ilceId: number, data: { ilce: string }) => {
   const response = await fetch(`/api/ulkeler/iller/${ilId}/ilceler/${ilceId}`, {
-    method: "PUT",
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
